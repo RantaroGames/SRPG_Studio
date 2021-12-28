@@ -1,4 +1,4 @@
-# SRPGStudio
+# SRPG_Studio
 SRPG Studioで使用できるプラグイン集
 <h2>プラグイン利用規約</h2>
 <br>
