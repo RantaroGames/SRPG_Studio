@@ -229,9 +229,9 @@ ran
 	// イベント条件切替の設定状況によっては、このタイミングでのリスト取得だと漏れが生じる可能性もある
 	var _EnemyTurn__moveEndEnemyTurn = EnemyTurn._moveEndEnemyTurn;
 	EnemyTurn._moveEndEnemyTurn = function() {
-		_EnemyTurn__moveEndEnemyTurn.call(this);
-		
 		MapLayer._setReinforcementNotice();
+
+		return _EnemyTurn__moveEndEnemyTurn.call(this);
 	};
 	
 })();
