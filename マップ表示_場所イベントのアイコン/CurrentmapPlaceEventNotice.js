@@ -75,7 +75,6 @@ function f_checkSceneType()
 //	};
 	
 	// ターン切り替わり時に場所イベントの表示用リストを取得する
-	// 場所イベント表示はプレイヤーへのアナウンスなので敵ターン中にリスト更新する必要は低いと判断した
 	var _PlayerTurn_openTurnCycle = PlayerTurn.openTurnCycle;
 	PlayerTurn.openTurnCycle = function () {
 		_PlayerTurn_openTurnCycle.call(this);
@@ -89,6 +88,14 @@ function f_checkSceneType()
 		_PlayerTurn_doEventEndAction.call(this);
 		
 		MapLayer._setPlaceEventList();
+	};
+	
+ 	// エネミーターン終了時に実行可能な場所イベントを保存
+	var _EnemyTurn__moveEndEnemyTurn = EnemyTurn._moveEndEnemyTurn;
+	EnemyTurn._moveEndEnemyTurn = function() {
+		MapLayer._setPlaceEventList();
+		
+		return _EnemyTurn__moveEndEnemyTurn.call(this);
 	};
 	
 	var alias_drawMapLayer = MapLayer.drawMapLayer;
