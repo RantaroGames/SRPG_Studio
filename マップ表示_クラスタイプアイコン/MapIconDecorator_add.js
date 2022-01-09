@@ -42,4 +42,42 @@ MapIconDecorator._addDecorationData = function(obj) {
 	obj.addObjectType(0, 0, IconDecorationType.CLASSTYPE, false);
 };
 
+
+//環境設定
+var aliasConfig01 = ConfigWindow._configureConfigItem;
+ConfigWindow._configureConfigItem = function(groupArray) {
+	aliasConfig01.call(this, groupArray);
+	
+	groupArray.appendObject(ConfigItem.IconDecoration_CLASSTYPE);
+};
+
+ConfigItem.IconDecoration_CLASSTYPE = defineObject(BaseConfigtItem,
+{
+	selectFlag: function(index) {
+		root.getExternalData().env.IconDacorationClassType = index;
+		MapIconDecorator.setupDecoration();
+	},
+	
+	getFlagValue: function() {
+		if (typeof root.getExternalData().env.IconDacorationClassType !== 'number') {
+			return 1;
+		}
+	
+		return root.getExternalData().env.IconDacorationClassType;
+	},
+	
+	getFlagCount: function() {
+		return 2;
+	},
+	
+	getConfigItemTitle: function() {
+		return 'クラスタイプ表示';
+	},
+	
+	getConfigItemDescription: function() {
+		return 'ユニットのクラスタイプを識別するアイコンを表示します';
+	}
+}
+);
+
 })();
