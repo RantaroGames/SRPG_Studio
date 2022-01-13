@@ -28,7 +28,7 @@ DistanceCalculater._calculateDistance();
 
 3.オリジナルデータにデータを設定
 ユニット：対象にしたいユニットを指定
-数値1：ｘ座標(変数も可)
+数値1：x座標(変数も可)
 数値2：y座標(変数も可)
 
 
@@ -43,7 +43,7 @@ DistanceCalculater._getPosUnitId(type, isNearest);
 2.「戻り値を変数で受け取る」にチェックを入れて任意の変数を指定する
 
 3.オリジナルデータにデータを設定
-数値1：ｘ座標(変数も可)
+数値1：x座標(変数も可)
 数値2：y座標(変数も可)
 
 
@@ -58,7 +58,7 @@ DistanceCalculater._getDistanceValue(type, isNearest);
 2.「戻り値を変数で受け取る」にチェックを入れて任意の変数を指定する
 
 3.オリジナルデータにデータを設定
-数値1：ｘ座標(変数も可)
+数値1：x座標(変数も可)
 数値2：y座標(変数も可)
 
 ■作成者
@@ -154,40 +154,30 @@ var DistanceCalculater = {
 	},
 	
 	_getPosUnitId: function(type, isNearest) {
-		var arr = this.getDistanceArray(type);
-		var distance, unit, i;
-		var value = isNearest ? 500 : 0;// mapの最大は250*250
+		var obj = this._checkDistance(this.getDistanceArray(type), isNearest);
 		
-		if (Object.prototype.toString.call(arr) !== '[object Array]' || arr.length === 0) return -1;
+		if (obj.unit === null) return -1;
 		
-		if (isNearest) {
-			for (i = 0; i < arr.length; i++) {
-				distance = arr[i][1];
-				if (distance <= value) {
-					unit = arr[i][0];
-					value = distance;
-				}
-			}
-		}
-		else {
-			for (i = 0; i < arr.length; i++) {
-				distance = arr[i][1];
-				if (distance >= value) {
-					unit = arr[i][0];
-					value = distance;
-				}
-			}
-		}
-		
-		return unit.getId();
+		return obj.unit.getId();
 	},
 	
 	_getDistanceValue: function(type, isNearest) {
-		var arr = this.getDistanceArray(type);
+		var obj = this._checkDistance(this.getDistanceArray(type), isNearest);
+			
+		return obj.distance;
+	},
+	
+	_checkDistance: function(arr, isNearest) {
 		var distance, unit, i;
 		var value = isNearest ? 500 : 0;// mapの最大は250*250
+		var obj = {
+				unit: null,
+				distance: -1
+			}
 		
-		if (Object.prototype.toString.call(arr) !== '[object Array]' || arr.length === 0) return -1;
+		if (Object.prototype.toString.call(arr) !== '[object Array]' || arr.length === 0) {
+			return obj;
+		}
 		
 		if (isNearest) {
 			for (i = 0; i < arr.length; i++) {
@@ -208,10 +198,9 @@ var DistanceCalculater = {
 			}
 		}
 		
-/* 		if (unit !== null && typeof value === 'number') { 
-			root.log(unit.getName() + 'd:' + value);
-		} */
+		obj.unit = unit;
+		obj.distance = value;
 		
-		return value;
+		return obj;
 	}
 };
