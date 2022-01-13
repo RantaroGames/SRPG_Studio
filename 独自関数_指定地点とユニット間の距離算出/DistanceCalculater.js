@@ -22,7 +22,7 @@ ver.1.251
 
 ・指定ユニット－座標間の距離を取得する方法
 1.プロパティに以下のメソッドを記述する
-DistanceCalculater._calculateDistance();
+Fnc_DistanceCalculater._calculateDistance();
 
 2.「戻り値を変数で受け取る」にチェックを入れて任意の変数を指定する
 
@@ -34,7 +34,7 @@ DistanceCalculater._calculateDistance();
 
 ・所属勢力のリスト中から指定地点に「最も近い/遠い」ユニットのidを取得する方法
 1.プロパティに以下のメソッドを記述する
-DistanceCalculater._getPosUnitId(type, isNearest);
+Fnc_DistanceCalculater._getPosUnitId(type, isNearest);
 
 引数
 @ type {number} player:0, enemy:1, ally:2,
@@ -49,7 +49,7 @@ DistanceCalculater._getPosUnitId(type, isNearest);
 
 ・所属勢力のリスト中から指定地点に「最も近い/遠い」ユニットの距離を取得する方法
 1.プロパティに以下のメソッドを記述する
-DistanceCalculater._getDistanceValue(type, isNearest);
+Fnc_DistanceCalculater._getDistanceValue(type, isNearest);
 
 引数
 @ type {number} player:0, enemy:1, ally:2,
@@ -69,7 +69,7 @@ ran
 
 */
 
-var DistanceCalculater = {
+var Fnc_DistanceCalculater = {
 	_calculateDistance: function() {
 		var content = root.getEventCommandObject().getOriginalContent();
 		var unit = content.getUnit();
