@@ -5,7 +5,15 @@ UnitCommand_MetamorphozeCancel_add.js
 ■プラグインの概要
 形態変化を手動キャンセルする場合、「本来のクラスで進入不可の地形にいる時」はキャンセルコマンドを許可しない
 ※本プラグインでは「進入できる条件」を正しく考慮できない場合がある
-(getMovePointFromMoveTypeIdメソッドは「進入できる条件」を考慮せずエディタの設定値(移動コスト)を返してくるため)
+
+・現バージョンにおける判定の仕様
+PosChecker.getMovePointFromUnit(x, y, unit)は、現在(形態変化中)のクラスの進入コストを返すため
+元のクラスで進入不可になる地形を判定する目的では使用できない
+同様にterrain.getPassableAggregation().isCondition(unit)も現在のクラスを基に判定するため、この場合は利用できない
+
+そのためterrain.getMovePointFromMoveTypeId(moveTypeId)で元のクラスの移動タイプから進入コストを取得している
+ただし、このメソッドでは「進入できる/できない条件」を考慮できないためエディタでコスト1以上の値が設定されていると進入可能と判定される
+(スキルやクラスタイプ等で進入可否を区別している地形を正しく判定できない)
 
 ■使用方法
 このファイルをpluginフォルダに入れる
