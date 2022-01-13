@@ -84,44 +84,9 @@ var DistanceCalculater = {
 	
 	// [最も近い/遠い]ユニットを取得するメソッド
 	getPosUnit: function(type, isNearest) {
-		var list, i, count, unit, posUnit, distance;
-		var value = isNearest ? 500 : 0;// mapの最大は250*250
-		var content = root.getEventCommandObject().getOriginalContent();
-		var posX = content.getValue(0);
-		var posY = content.getValue(1);
-		
-		// 生存かつフュージョンされていないユニットのリストを取得する
-		switch (type) {
-			case 0   : list = PlayerList.getSortieList(); break;
-			case 1   : list = EnemyList.getAliveList();   break;
-			case 2   : list = AllyList.getAliveList();    break;
-			default  : return null;
-		}
-		
-		count = list.getCount();
-		for (i = 0; i < count; i++) {
-			unit = list.getData(i);
-			if (unit === null) continue;
-			
-			distance = Math.abs(unit.getMapX() - posX) + Math.abs(unit.getMapY() - posY);
-			//root.log(unit.getName() + 'd:' + distance + '('+ unit.getMapX() + ', ' + unit.getMapY() + ')');
-
-			if (isNearest) {
-				if (distance <= value) {
-					posUnit = unit;
-					value = distance;
-				}
-			}
-			else {
-				if (distance >= value) {
-					posUnit = unit;
-					value = distance;
-				}
-			}
-		}
-		
-		// if (posUnit !== null) root.log(posUnit.getName());
-		return posUnit;
+		var obj = this._checkDistance(this.getDistanceArray(type), isNearest);
+		//root.log('name:' + obj.unit.getName());
+		return obj.unit;
 	},
 	
 	getDistanceArray: function(type) {
@@ -145,7 +110,7 @@ var DistanceCalculater = {
 			if (unit === null) continue;
 			
 			distance = Math.abs(unit.getMapX() - posX) + Math.abs(unit.getMapY() - posY);
-			root.log(unit.getName() + 'd:' + distance + '('+ unit.getMapX() + ', ' + unit.getMapY() + ')');
+			//root.log(unit.getName() + 'd:' + distance + '('+ unit.getMapX() + ', ' + unit.getMapY() + ')');
 			
 			arr.push([unit, distance]);
 		}
