@@ -152,6 +152,7 @@ var MessageTitleEventCommand_TimeLimitType = defineObject(MessageTitleEventComma
 		this._interval = 16;
 		this._direction = (typeof arg.direction === 'number') ? arg.direction : 0;
 		this._inputallowed = false;
+		this._isOneway = false;
 		
 		if (typeof arg.text === 'string') {
 			this._text = arg.text;
