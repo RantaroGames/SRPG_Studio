@@ -30,6 +30,7 @@ CEC_MessageTitleEventCommand
 , y:40
 , wait: 120
 , direction: 0
+, isOneway: false
 }
 
 //----------------------------------------------------------
@@ -49,6 +50,8 @@ CEC_MessageTitleEventCommand
  :表示させる総フレーム数(*1) 未指定または0未満の値は規定で 180
  direction
  : スライドの開始方向 「0:左から指定座標へ, 1:右, 3:上, 4:下, 5:左上, 6:右上, 7:右下, 8:スライド無し」未指定または無効な値の場合、規定で左からスライド
+ isOnway
+ : true/false 消去時にスライド方向を一定にする(左から右へ入った時にそのまま右へ抜けて消える)
 
 (*1)表示開始からカウント(実際はCycleCounterクラスの処理にて+2フレームされているものと思われる)
 フレームインの時間は16フレーム(タイトル長を16分割して順次表示している)
@@ -65,6 +68,8 @@ ran
 ユニットを基準にした際、スクロール位置を考慮しないバグの修正
 2021/07/25
 表示方法を終了時に開始時とは逆方向へフレームアウトして消去する形式に変更
+2022/01/15
+消去時のスライド方向を一定にするプロパティを追加
 */
 
 (function() {
@@ -83,6 +88,7 @@ var MessageTitleEventCommand_TimeLimitType = defineObject(MessageTitleEventComma
 	_interval: 0,
 	_direction: 0,
 	_inputallowed: false,
+	_isOneway: false,
 	
 	enterEventCommandCycle: function() {
 		this._prepareEventCommandMemberData();
@@ -161,6 +167,10 @@ var MessageTitleEventCommand_TimeLimitType = defineObject(MessageTitleEventComma
 			}
 		}
 		
+		if (typeof arg.isOneway === 'boolean') {
+			this._isOneway = arg.isOneway;
+		}
+		
 		this._textWidth = TextRenderer.getTextWidth(this._text, font);
 		this._partsWidth = TitleRenderer.getTitlePartsWidth();
 		this._partsHeight = TitleRenderer.getTitlePartsHeight();
@@ -232,8 +242,14 @@ var MessageTitleEventCommand_TimeLimitType = defineObject(MessageTitleEventComma
 			dy += obj.dy;
 		} else if (this._wait - this._counter.getCounter() < this._interval) {
 			obj = this._getEraseDirection(this._direction, titleWidth, titleHeight);
-			dx -= obj.dx;
-			dy -= obj.dy;
+			if (this._isOneway) {
+				dx += obj.dx;
+				dy += obj.dy;
+			}
+			else {
+				dx -= obj.dx;
+				dy -= obj.dy;
+			}
 		}
 		else {
 			dx = 0;
