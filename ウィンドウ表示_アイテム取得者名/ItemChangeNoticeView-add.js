@@ -1,5 +1,5 @@
 ﻿/*------------------------------------------------
-【ファイル名】:ItemChangeNoticeView-add(test).js
+【ファイル名】:ItemChangeNoticeView-add.js
 【作成者】:ran
 【SRPG Studio対応ver】:1.080
 【動作内容】
