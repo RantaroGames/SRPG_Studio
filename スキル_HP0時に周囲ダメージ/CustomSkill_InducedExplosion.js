@@ -221,7 +221,7 @@ var InducedExplosionFlowEntry = defineObject(BaseFlowEntry,
 		}
 		
 		generator.locationFocus(targetUnit.getMapX(), targetUnit.getMapY(), true); 
-		generator.damageHit(targetUnit,	effect,	damage,	damageType,	unit, isSkipMode);
+		generator.damageHit(targetUnit,	effect,	damage,	damageType, unit, isSkipMode);
 	},
 	
 	_getDamageData: function(skill) {
