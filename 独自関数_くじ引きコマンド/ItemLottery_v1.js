@@ -483,22 +483,3 @@ var Fnc_getLottery = {
 		return 0;		
 	}
 };
-
-
-/*,
-	
-	// ユニットを取得して幸運の値で乱数を操作することを考えたがゲームによって幸運の値が異なる(上限30と上限3000など)可能性があるので扱い方に困って廃案にした
- 	getUnit: function() {
-		var content = root.getEventCommandObject().getOriginalContent();
-		var unit = content.getUnit();
-		
-		if (unit.getAliveState() !== AliveType.ALIVE) {
-			return null;
-		}
-		return unit;
-	},
-	
-	_getUnitParamLuk: function(unit) {
-		return ParamBonus.getLuk(unit);
-	}
-*/
