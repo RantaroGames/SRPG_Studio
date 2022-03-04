@@ -115,7 +115,7 @@ id(*3),rarity(*4),ItemName(*5)
    
 3-2.レアリティの出現率を元のcsvデータに戻すには、次のコードを実行します
    
-   Fnc_getLottery.setRarity_EnvData();
+   Fnc_getLottery._resetTempRarity();
    
 4．特定のアイテムを出現しやすくするには
 4-1.くじ引きイベントの前に次のコードを実行します。*引数には配列を指定します
@@ -224,6 +224,9 @@ var Fnc_getLottery = {
 	setUpData: function() {
 		this.setRarity_EnvData();
 		this.setSample_EnvData();
+		
+		delete root.getMetaSession().global.LotteryDB_TempRarity;
+		root.getMetaSession().global.LotteryDB_PickUp = [];
 	},
 	
 	init: function() {
@@ -238,7 +241,13 @@ var Fnc_getLottery = {
 			root.getExternalData().env.LotteryDB_Rarity = [];
 		}
 		
-		return root.getExternalData().env.LotteryDB_Rarity;
+		var tempRarity = this._getTempRarity();
+		if (typeof tempRarity !== 'undefined') {
+			return tempRarity;
+		}
+		else {
+			return root.getExternalData().env.LotteryDB_Rarity;
+		}
 	},
 	
 	// 環境パラメータにレアリティ毎の出現度合いを記録する
@@ -246,6 +255,10 @@ var Fnc_getLottery = {
 		var rarity = readCSVFile(LOTTERY_FOLDER_NAME, LOTTERY_DB_RARITY_NAME);
 		
 		root.getExternalData().env.LotteryDB_Rarity = rarity;
+	},
+	
+	_getTempRarity: function() {
+		return root.getMetaSession().global.LotteryDB_TempRarity;
 	},
 	
 	// レアリティ毎の出現度合いを一時的に変更する
@@ -273,7 +286,11 @@ var Fnc_getLottery = {
 		}
 //		root.log('tempRarity:' + arr);
 
-		root.getExternalData().env.LotteryDB_Rarity = arr;
+		root.getMetaSession().global.LotteryDB_TempRarity = arr;
+	},
+	
+	_resetTempRarity: function() {
+		delete root.getMetaSession().global.LotteryDB_TempRarity;
 	},
 	
 	// 景品データをcsvファイルから取得する
