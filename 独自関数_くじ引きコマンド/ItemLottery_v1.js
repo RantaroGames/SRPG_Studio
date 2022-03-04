@@ -4,7 +4,7 @@
 QBU氏のGitHubへのリンク https://github.com/QBE256
 
 ■ファイル名
-ItemLottery.js
+ItemLottery_v1.js
 
 ■SRPG Studio対応バージョン
 ver.1.254
