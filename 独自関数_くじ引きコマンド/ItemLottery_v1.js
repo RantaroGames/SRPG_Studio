@@ -282,7 +282,7 @@ var Fnc_getLottery = {
 	
 	// csvファイルのデータを基に環境パラメータにレアリティ毎の景品リストを記録する(pickUpは考慮しない)
 	// この処理は、game.exe起動時にに毎回行われる(ゲームのプロジェクトファイル更新時に、くじのDBが変更されていた時に環境パラメータの情報も更新するため)
-	// LotteryDB_Sampleオブジェクトはrarityの数値を名前(arr_5等)にした配列を作成しする。この配列は要素に[id, name]を持つ
+	// LotteryDB_Sampleオブジェクトはrarityの数値を名前(arr_5等)にした配列を作成する。この配列は要素に[id, name]を持つ
 	setSample_EnvData: function() {
 		var events = this.getEventsFromCSVFile();
 		var rarity = this.getRarity_EnvData();
