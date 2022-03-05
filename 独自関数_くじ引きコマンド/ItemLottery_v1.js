@@ -27,7 +27,7 @@ ver.1.254
 1-3．'LotteryItems.csv' および 'Rarity.csv' ファイルにcsv形式※でデータを設定する
 
 * フォルダ名とファイル名は任意のものを付けても構いません。
-  ただし、その場合は本プラグインの設定項目も変更してください。(設定項目は206行付近にあります)
+  ただし、その場合は本プラグインの設定項目も変更してください。(設定項目は180行付近にあります)
 
 ※'Rarity.csv' の設定項目
 
@@ -161,40 +161,15 @@ ran
 
 (function() {
 
-// タイトルシーンに入った時にcsvファイルからデータを環境ファイルにコピーする
-var _TitleScene__pushFlowEntries = TitleScene._pushFlowEntries;
-TitleScene._pushFlowEntries = function(straightFlow) {
-	_TitleScene__pushFlowEntries.call(this, straightFlow);
-
-	straightFlow.pushFlowEntry(InitialLotteryDataFlowEntry);
+// ゲーム起動時にcsvファイルからデータを環境パラメータにコピーする
+var _SetupControl_setup = SetupControl.setup;
+SetupControl.setup = function() {
+	_SetupControl_setup.call(this);
+	
+//	root.watchTime();	
+	Fnc_getLottery.setUpData();	
+//	root.log('time:Fnc_getLottery.setUpData ' + root.getElapsedTime() + 'ms');	
 };
-
-var InitialLotteryDataFlowEntry = defineObject(BaseFlowEntry,
-{
-	enterFlowEntry: function(titleScene) {
-		this._prepareInitialStartup();
-		
-		return EnterResult.OK;
-	},
-	
-	moveFlowEntry: function() {
-		//this._doEndAction();
-		return MoveResult.END;
-	},
-	
-	_prepareInitialStartup: function() {
-//		root.watchTime();
-		
-		Fnc_getLottery.setUpData();
-		
-//		root.log('time:Fnc_getLottery.setUpData ' + root.getElapsedTime() + 'ms');
-	},
-	
-	_doEndAction: function() {
-	}
-}
-);
-
 
 })();
 
@@ -223,25 +198,26 @@ var Fnc_getLottery = {
 	setUpData: function() {
 		this.setRarity_EnvData();
 		this.setSample_EnvData();
-		
-		delete root.getMetaSession().global.LotteryDB_TempRarity;
-		root.getMetaSession().global.LotteryDB_PickUp = [];
 	},
 	
 	init: function() {
-		this._rarity = this.getRarity_EnvData();
+		this._rarity = this.getCurrentRarity();
 		this._sample = this.getSample_EnvData();
 		this._random = 0;
 	},
-		
+	
+	// 現在使用するのレアリティ別出現度合いを取得する
+	getCurrentRarity: function() {
+ 		var tempRarity = this._getTempRarity();
+		if (typeof tempRarity !== 'undefined') {
+			return tempRarity;
+		}
+		return this.getRarity_EnvData();
+	},
+	
 	getRarity_EnvData: function() {
 		if (Object.prototype.toString.call(root.getExternalData().env.LotteryDB_Rarity) !== '[object Array]') {
 			root.getExternalData().env.LotteryDB_Rarity = [];
-		}
-		
-		var tempRarity = this._getTempRarity();
-		if (typeof tempRarity !== 'undefined') {
-			return tempRarity;
 		}
 		
 		return root.getExternalData().env.LotteryDB_Rarity;
@@ -259,6 +235,7 @@ var Fnc_getLottery = {
 	},
 	
 	// レアリティ毎の出現度合いを一時的に変更する
+	// セーブデータに依存させたいのでglobalパラメータに保存する
 	_setTempRarity: function(arr) {
 		if (Object.prototype.toString.call(arr) !== '[object Array]') {
 			root.msg('Fnc_getLottery._setTempRarity　の引数が配列型でありません');
@@ -304,7 +281,7 @@ var Fnc_getLottery = {
 	},
 	
 	// csvファイルのデータを基に環境パラメータにレアリティ毎の景品リストを記録する(pickUpは考慮しない)
-	// この処理は、タイトルシーンで毎回行われる(ゲームファイルの更新時にくじのDBが変更されていた時に環境パラメータの情報も更新するため)
+	// この処理は、game.exe起動時にに毎回行われる(ゲームのプロジェクトファイル更新時に、くじのDBが変更されていた時に環境パラメータの情報も更新するため)
 	// LotteryDB_Sampleオブジェクトはrarityの数値を名前(arr_5等)にした配列を作成しする。この配列は要素に[id, name]を持つ
 	setSample_EnvData: function() {
 		var events = this.getEventsFromCSVFile();
@@ -357,7 +334,7 @@ var Fnc_getLottery = {
 			
 			// LotteryItems.csvから取得したアイテムのレアリティ(数値)を加えた名前の配列を作成してアイテムを追加していく
 			arrName = 'arr_' + obj[1];
-			//root.log(i + ':arrName:' + arrName);
+//			root.log(i + ': ' + obj[2]+ '　リスト:' + arrName);
 			if (typeof sample[arrName] === 'undefined') {
 				sample[arrName] = [];
 			}
