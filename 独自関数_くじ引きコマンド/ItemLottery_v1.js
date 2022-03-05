@@ -218,7 +218,6 @@ var Fnc_getLottery = {
 	_rarity: null,
 	_sample: null,
 	_random: 0,
-//	_unit: null,
 	
 	// くじ引きイベントに必要なデータの初期設定を行います
 	setUpData: function() {
@@ -233,7 +232,6 @@ var Fnc_getLottery = {
 		this._rarity = this.getRarity_EnvData();
 		this._sample = this.getSample_EnvData();
 		this._random = 0;
-//		this._unit = null;
 	},
 		
 	getRarity_EnvData: function() {
@@ -245,9 +243,8 @@ var Fnc_getLottery = {
 		if (typeof tempRarity !== 'undefined') {
 			return tempRarity;
 		}
-		else {
-			return root.getExternalData().env.LotteryDB_Rarity;
-		}
+		
+		return root.getExternalData().env.LotteryDB_Rarity;
 	},
 	
 	// 環境パラメータにレアリティ毎の出現度合いを記録する
