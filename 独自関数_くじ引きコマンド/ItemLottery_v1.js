@@ -381,7 +381,7 @@ var Fnc_getLottery = {
 	
 	// 乱数を取得する
 	getRandom: function() {
-		var probTotal = 0;
+		var probTotal = 100;
 		var i;
 		
 		// Rarity.csvで設定したレアリティ毎の重みの総和を求める
@@ -389,8 +389,13 @@ var Fnc_getLottery = {
 			if (typeof this._rarity[i][1] !== 'number') continue;
 			probTotal += this._rarity[i][1];
 		}
-		root.log('probTotal:' + probTotal);
 		
+		root.log('probTotal:' + probTotal);
+		if (probTotal < 1) {
+			probTotal = 100;
+			root.msg('probTotalが不正です。値が1未満な為、100を代入します');
+		}
+	
 		// randomは、1～重みの総和
 		return root.getRandomNumber() % probTotal + 1;
 	},
@@ -409,20 +414,27 @@ var Fnc_getLottery = {
 		
 		var arrName = 'arr_' + rarity;
 		var itemesTable = [];
-		var index;
+		var index, count;
 		var id = -1;
 		
 		//root.log('samplearr:' + this._sample[arrName].length);
 		// 当選レアリティを基にアイテムテーブルを選択し、pickUp中のアイテムを追加する
 		itemesTable = this._setPickUpItems(this._sample[arrName]);
+		count = itemesTable.length;
 		
-		// indexをrandomから求める
-		index = this._random % itemesTable.length;
-		//root.log('itemsTable' + rarity + ' index:' + index + ' len:' + itemesTable.length);
+		// indexを求めて景品のidを取得する
+		if (count < 1) {
+			id = -1;
+			root.msg('レアリティ' + rarity + 'のリストにアイテムがありません');
+		}
+		else {
+			index = root.getRandomNumber() % count;
+			//root.log('itemsTable' + rarity + ' index:' + index + ' len:' + count);
+			
+			// csvファイルのデータをidに代入した値をエディタ側が変数で受け取ってくれなかったのでparseInt()で整数値に変換している
+			id = parseInt(itemesTable[index][0], 10);
+		}
 		
-		// csvファイルのデータをidに代入した値をエディタ側が変数で受け取ってくれなかったのでparseInt()で整数値に変換している
-		id = parseInt(itemesTable[index][0], 10);
-
 		// DBでid100000台は、アイテム(武器ではない)として設定している。これからItemIdValue.BASEの値を引くとエディタのアイテムidになる
 		// その上で id+65536 にすることでid変数を利用してアイテムの増減コマンドを利用できる
 		// ItemIdValue.BASE = 100000; @ constants-enumeratedtype.js
