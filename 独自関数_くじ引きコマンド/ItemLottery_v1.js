@@ -403,10 +403,6 @@ var Fnc_getLottery = {
 	
 	// 取得した乱数から当選の有無を決定して景品のidを返す
 	getRandomItems: function() {
-		var arrName = 'arr_' + rarity;
-		var itemesTable = [];
-		var index, count;
-		var id = -1;
 		
 		this.init();
 		root.log('RarityArr:' + this._rarity);
@@ -422,6 +418,11 @@ var Fnc_getLottery = {
 			root.msg('当選したレアリティの値:' + rarity + 'がRarity.csvに存在しません');
 			return -1;
 		}
+		
+		var arrName = 'arr_' + rarity;
+		var itemesTable = [];
+		var index, count;
+		var id = -1;
 		
 		//root.log('samplearr:' + this._sample[arrName].length);
 		// 当選レアリティを基にアイテムテーブルを選択し、pickUp中のアイテムを追加する
