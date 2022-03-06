@@ -382,7 +382,7 @@ var Fnc_getLottery = {
 	
 	// 乱数を取得する
 	getRandom: function() {
-		var probTotal = 100;
+		var probTotal = 0;
 		var i;
 		
 		// Rarity.csvで設定したレアリティ毎の重みの総和を求める
