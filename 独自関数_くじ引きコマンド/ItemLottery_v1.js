@@ -335,7 +335,7 @@ var Fnc_getLottery = {
 			
 			// LotteryItems.csvから取得したアイテムのレアリティ(数値)を加えた名前の配列を作成してアイテムを追加していく
 			arrName = 'arr_' + obj[1];
-//			root.log(i + ': ' + obj[2]+ '　リスト:' + arrName);
+//			root.log(i + ':' + obj[2]+ ':' + arrName);
 			if (typeof sample[arrName] === 'undefined') {
 				sample[arrName] = [];
 			}
@@ -358,7 +358,7 @@ var Fnc_getLottery = {
 		for (i = 0; i < table.length; i++) {
 			obj = table[i];
 			pickUpCount = this._getPickUpItems(obj[0], pickUp);
-			root.log('pickUp:' + pickUpCount + ':' + obj[1]);
+//			root.log('pickUp:' + pickUpCount + ':' + obj[1]);
 				
 			for (j = 0; j < pickUpCount; j++) {
 				// sample[arrName] @ [[id, アイテム名]...]
@@ -393,16 +393,21 @@ var Fnc_getLottery = {
 		
 		root.log('probTotal:' + probTotal);
 		if (probTotal < 1) {
-			probTotal = 100;
-			root.msg('probTotalが不正です。値が1未満な為、100を代入します');
+			root.msg('probTotalが不正です。値が1未満な為、1を返します');
+			return 1;
 		}
-	
+		
 		// randomは、1～重みの総和
 		return root.getRandomNumber() % probTotal + 1;
 	},
 	
 	// 取得した乱数から当選の有無を決定して景品のidを返す
 	getRandomItems: function() {
+		var arrName = 'arr_' + rarity;
+		var itemesTable = [];
+		var index, count;
+		var id = -1;
+		
 		this.init();
 		root.log('RarityArr:' + this._rarity);
 		
@@ -413,10 +418,10 @@ var Fnc_getLottery = {
 		var rarity = this._getRarityBylot();
 		root.log('当選Rarity:' + rarity);
 		
-		var arrName = 'arr_' + rarity;
-		var itemesTable = [];
-		var index, count;
-		var id = -1;
+		if (this._checkRarity(rarity, this._rarity) === false) {
+			root.msg('当選したレアリティの値:' + rarity + 'がRarity.csvに存在しません');
+			return -1;
+		}
 		
 		//root.log('samplearr:' + this._sample[arrName].length);
 		// 当選レアリティを基にアイテムテーブルを選択し、pickUp中のアイテムを追加する
@@ -435,7 +440,7 @@ var Fnc_getLottery = {
 			// csvファイルのデータをidに代入した値をエディタ側が変数で受け取ってくれなかったのでparseInt()で整数値に変換している
 			id = parseInt(itemesTable[index][0], 10);
 		}
-		
+
 		// DBでid100000台は、アイテム(武器ではない)として設定している。これからItemIdValue.BASEの値を引くとエディタのアイテムidになる
 		// その上で id+65536 にすることでid変数を利用してアイテムの増減コマンドを利用できる
 		// ItemIdValue.BASE = 100000; @ constants-enumeratedtype.js
@@ -448,7 +453,7 @@ var Fnc_getLottery = {
 	},
 	
 	_getRarityBylot: function() {
-		var result = 0, i;
+		var i, result = -1;
 		var accum = 0;
 		
 		for (i = 0; i < this._rarity.length; i++) {
