@@ -396,7 +396,7 @@ var Fnc_getLottery = {
 	},
 	
 	// 取得した乱数から当選の有無を決定して景品のidを返す
-	getRandomItemes: function() {
+	getRandomItems: function() {
 		this.init();
 		root.log('RarityArr:' + this._rarity);
 		
