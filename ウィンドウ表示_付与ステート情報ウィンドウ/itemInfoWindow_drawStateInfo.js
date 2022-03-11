@@ -36,6 +36,7 @@ ran
 
 ■更新履歴
 2022/03/10 新規作成
+2022/03/12　ショップ(ShopLayoutScreen)ではステート情報を表示しない仕様にした
 
 */
 
@@ -59,10 +60,11 @@ var OT_FP_PlugIn = false;
 //---------------------------------------------
 
 // subWindow(ステート情報を表示するウィンドウ)用のメンバ変数
-ItemInfoWindow._state = null;
-ItemInfoWindow._subGroupArray = null;
-ItemInfoWindow._subWindowHeight = 0;
-ItemInfoWindow._isSubWidowEnabled = false;
+ItemInfoWindow._state = null;// @ {object} 表示するステートオブジェクト
+ItemInfoWindow._subGroupArray = null; // @ {Array} ステート情報の項目
+ItemInfoWindow._subWindowHeight = 0; // @ {number} subWindowの高さ
+ItemInfoWindow._isSubWidowEnabled = false; // @ {boolean} subWindowの画像表示判定
+ItemInfoWindow._isSubWidowDisalbed = false; // @ {boolean} subWindowの表示を許可するか否か
 
 // subWindowに表示するステート情報を設定する
 var _ItemInfoWindow_setInfoItem = ItemInfoWindow.setInfoItem;
@@ -76,6 +78,10 @@ ItemInfoWindow.setInfoItem = function(item) {
 	this._isSubWidowEnabled = false; 
 	this._subGroupArray = [];
 	this._subWindowHeight = 0;
+		
+	// subWindowを表示しない場面(ShopLayoutScreenなど)では、この時点で処理を終了する
+	// ショップ画面でsubWindowを表示しようとすると既存のウィンドウと被ってしまうので表示をオフにしている
+	if (this._isSubWidowDisalbed === true) return;
 	
 	if (typeof this._item === 'undefined') {
 		this._item = null;
@@ -107,13 +113,17 @@ ItemInfoWindow.setInfoItem = function(item) {
 	this._isSubWidowEnabled = true;
 };
 
+ItemInfoWindow._getSubWindowWidth = function() {
+	return ItemRenderer.getItemWindowWidth();
+};
+
 // subWindowの描画(本来のウィンドウ描画に処理を付随させる)
 // ウィンドウが見切れた場合は位置を補正する
 var _ItemInfoWindow_drawWindow = ItemInfoWindow.drawWindow;
 ItemInfoWindow.drawWindow = function(x, y) {
 	var w, h;
 	
-	w = this._isSubWidowEnabled ? this.getWindowWidth() + ItemRenderer.getItemWindowWidth()　: this.getWindowWidth();
+	w = this._isSubWidowEnabled ? this.getWindowWidth() + this._getSubWindowWidth() : this.getWindowWidth();
 	if (x + w > root.getGameAreaWidth()) {
 		x -= x + w - root.getGameAreaWidth();
 		x -= 8;
@@ -133,13 +143,14 @@ ItemInfoWindow.drawWindow = function(x, y) {
 ItemInfoWindow._drawSubWindow = function(x, y) {
 	var width = this.getWindowWidth();
 	var height = this._subWindowHeight;
+	var subWidth = this._getSubWindowWidth();
 	
 	if (!this._isWindowEnabled || !this._isSubWidowEnabled) {
 		return;
 	}
 	
 	x += width;
-	this._drawWindowInternal(x, y, width, height);
+	this._drawWindowInternal(x, y, subWidth, height);
 	
 	if (this._drawParentData !== null) {
 		this._drawParentData(x, y);
@@ -247,13 +258,17 @@ SkillInfoWindow.setSkillInfoData = function(skill, objecttype) {
 	this._isSubWidowEnabled = true;
 };
 
+SkillInfoWindow._getSubWindowWidth = function() {
+	return ItemRenderer.getItemWindowWidth();
+};
+
 // subWindowの描画(本来のウィンドウ描画に処理を付随させる)
 // ウィンドウが見切れた場合は位置を補正する
 var _SkillInfoWindow_drawWindow = SkillInfoWindow.drawWindow;
 SkillInfoWindow.drawWindow = function(x, y) {
 	var w, h;
 	
-	w = this._isSubWidowEnabled ? this.getWindowWidth() + ItemRenderer.getItemWindowWidth()　: this.getWindowWidth();
+	w = this._isSubWidowEnabled ? this.getWindowWidth() + this._getSubWindowWidth()　: this.getWindowWidth();
 	if (x + w > root.getGameAreaWidth()) {
 		x -= x + w - root.getGameAreaWidth();
 		x -= 8;
@@ -273,7 +288,7 @@ SkillInfoWindow.drawWindow = function(x, y) {
 SkillInfoWindow._drawSubWindow = function(x, y) {
 	var width = this.getWindowWidth();
 	var height = this._subWindowHeight;
-	var subWidth = ItemRenderer.getItemWindowWidth();
+	var subWidth = this._getSubWindowWidth();
 	
 	if (!this._isWindowEnabled || !this._isSubWidowEnabled) {
 		return;
@@ -379,6 +394,16 @@ ItemInfoRenderer._drawDopingState = function(x, y, arr) {
 	}
 
 	return count2;
+};
+
+//-----------------------------------------
+// ShopLayoutScreendではサブウィンドウを表示しない
+//-----------------------------------------
+var _ShopLayoutScreen__prepareScreenMemberData = ShopLayoutScreen._prepareScreenMemberData;
+ShopLayoutScreen._prepareScreenMemberData = function(screenParam) {
+	_ShopLayoutScreen__prepareScreenMemberData.call(this, screenParam);
+	
+	this._itemInfoWindow._isSubWidowDisalbed = true;
 };
 
 //-----------------------------------------------------------------
@@ -722,7 +747,7 @@ ItemSentenceStateInfo.FPRecoveryValue = defineObject(BaseItemSentence,
 
 //------------------------------
 // ステータス増減値
-// @param _arr{Array}
+// @param { _arr: Array }
 //------------------------------
 ItemSentenceStateInfo.DopingParameter = defineObject(BaseItemSentence,
 {
