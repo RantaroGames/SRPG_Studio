@@ -186,6 +186,7 @@ ItemInfoWindow._configureStateInfo = function(groupArray) {
 	}
 	
 	groupArray.appendObject(ItemSentenceStateInfo.DopingParameter);
+	groupArray.appendObject(ItemSentenceStateInfo.TurnChangeValue);
 };
 
 
@@ -324,6 +325,7 @@ SkillInfoWindow._configureStateInfo = function(groupArray) {
 	}
 	
 	groupArray.appendObject(ItemSentenceStateInfo.DopingParameter);
+	groupArray.appendObject(ItemSentenceStateInfo.TurnChangeValue);
 };
 
 
@@ -775,6 +777,36 @@ ItemSentenceStateInfo.DopingParameter = defineObject(BaseItemSentence,
 		}
 		
 		return Math.ceil(count2 / 2);
+	}
+}
+);
+
+// ターン経過/ボーナス値減少
+ItemSentenceStateInfo.TurnChangeValue = defineObject(BaseItemSentence,
+{
+	drawItemSentence: function(x, y, state) {
+		var text, recoveryValue;
+		var value = state.getTurnChangeValue();
+		
+		if (value === 0) return;
+		
+		text = '補正減少';
+		ItemInfoRenderer.drawKeyword(x, y, text);
+		x += ItemInfoRenderer.getSpaceX();
+		NumberRenderer.drawRightNumber(x, y, value);
+		
+		x += 10;
+		if (value > 99) x += 9;
+		if (value > 9)  x += 9;
+		ItemInfoRenderer.drawKeyword(x, y, ' / ターン');
+	},
+	
+	getItemSentenceCount: function(state) {
+		var value = state.getTurnChangeValue();
+		
+		if (value === 0) return 0;
+	
+		return 1;
 	}
 }
 );
