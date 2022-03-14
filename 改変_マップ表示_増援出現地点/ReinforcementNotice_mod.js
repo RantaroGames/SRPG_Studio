@@ -54,6 +54,8 @@ ran
 
 最終改変日
 2021/12/03
+2022/03/15
+
 */
 
 (function(){
@@ -136,10 +138,9 @@ ran
 	MapLayer._setReinforcementNotice = function() {
 		var i, j, posData, posDataCount, handle, x, y;
 		var session = root.getCurrentSession();
-		var arr = [];
 		
 		// 援軍リスト保存用配列を初期化
-		MapLayer._ReinforcementNoticeArr = [];
+		this._ReinforcementNoticeArr = [];
 		
 		if (session === null) return;
 		
@@ -183,15 +184,12 @@ ran
 						if (handle.isNullHandle()) continue;
 						
 						// 出現地点座標x,yとiconハンドルを配列に格納
-						arr.push([x, y, handle]);
+						this._ReinforcementNoticeArr.push([x, y, handle]);
 						//root.log('増援座標：' + x + ', ' + y);
 					}
 				}
 			}
 		}
-		
-		// 表示する援軍の座標とアイコンデータを保存する
-		MapLayer._ReinforcementNoticeArr = arr;
 	};
 	
 	// 増援リストを保存する
@@ -199,7 +197,7 @@ ran
 	MapLayer.prepareMapLayer = function() {
 		_MapLayer_prepareMapLayer.call(this);
 		
-		MapLayer._setReinforcementNotice();
+		this._setReinforcementNotice();
 	};
 	
 	// ターン切り替わり時に増援の表示用リストを取得する
