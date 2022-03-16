@@ -3,18 +3,26 @@
 itemInfoWindow_drawStateInfo.js
 
 ■SRPG Studio対応バージョン
-ver.1.254
+ver.1.255
 
 ■プラグインの概要
-ステートを付与する武器、アイテム、スキル(*)のアイテム情報ウィンドウに付与ステートの情報を別ウィンドウで表示します。
+ステートを付与する武器、アイテム、スキル(*1)のアイテム情報ウィンドウに付与ステートの情報を別ウィンドウで表示します。
+武器とアイテムの場合は、左シフトキー(※2)を押している間、ステート情報ウィンドウが表示されます。
+(スキル情報では、常時ステート情報をサブウィンドウで表示します)
 
-*表示可能なステートは、武器およびステート付与アイテムのデータで設定したステート、
+*1 表示可能なステートは、武器およびステート付与アイテムのデータで設定したステート、
 スキルの場合はエディタのステート攻撃で設定したステートに限られます。
 
 また複数ステートを付与できるような場合でも表示可能なステート情報は１つだけです。
 
+※2 game.iniファイルで[Keyboard] OPTION2=shiftに設定しているキーに対応しています。
+
 ■使用方法
-本プラグインをPluginフォルダに入れる
+1.本プラグインをPluginフォルダに入れる
+
+※ステート情報を左シフトキーを押している間のみ表示する仕様にしたい場合は下記コード内(55行目)で
+SubWindowDrawType = false;
+のように書き換えてください。(true:常時表示、false:左シフトキー押下中のみ)
 
 ・オプション1
 o-to氏のプラグインでステータスにEPまたはFPを導入している場合にステート情報に回復値を表示したい場合
@@ -37,10 +45,14 @@ ran
 ■更新履歴
 2022/03/10 新規作成
 2022/03/12　ショップ(ShopLayoutScreen)ではステート情報を表示しない仕様にした
+2022/03/16 左Shiftキーを押している場合にステート情報ウィンドウを表示する仕様を導入(武器とアイテムの場合。スキルでは常時表示)
 
 */
 
 (function() {
+
+// ステートウィンドウを常時表示する:true / 左Shiftキーを押している場合に表示:false
+var SubWindowDrawType = true;
 
 //---------------------------------------------------
 // o-to氏のプラグインでステータスにEPまたはFPを導入している場合に
@@ -121,23 +133,61 @@ ItemInfoWindow._getSubWindowWidth = function() {
 // ウィンドウが見切れた場合は位置を補正する
 var _ItemInfoWindow_drawWindow = ItemInfoWindow.drawWindow;
 ItemInfoWindow.drawWindow = function(x, y) {
-	var w, h;
+	var obj;
 	
-	w = this._isSubWidowEnabled ? this.getWindowWidth() + this._getSubWindowWidth() : this.getWindowWidth();
-	if (x + w > root.getGameAreaWidth()) {
-		x -= x + w - root.getGameAreaWidth();
-		x -= 8;
+	if (SubWindowDrawType) {
+		obj = this._adjustWindow(x, y, true);
+		x = obj.x;
+		y = obj.y;
+		
+		_ItemInfoWindow_drawWindow.call(this, x, y);
+		
+		this._drawSubWindow(x, y);
+	}	
+	else if (root.isInputState(InputType.BTN4)) {
+		obj = this._adjustWindow(x, y, true);
+		x = obj.x;
+		y = obj.y;
+		
+		_ItemInfoWindow_drawWindow.call(this, x, y);
+		
+		this._drawSubWindow(x, y);
 	}
-	
-	h = this.getWindowHeight() > this._subWindowHeight ? this.getWindowHeight() : this._subWindowHeight;
-	if (y + h > root.getGameAreaHeight()) {
-		y -= y + h - root.getGameAreaHeight();
-		y -= 8;
+	else {
+		obj = this._adjustWindow(x, y, false);
+		x = obj.x;
+		y = obj.y;
+		_ItemInfoWindow_drawWindow.call(this, x, y);
 	}
+};
 
-	_ItemInfoWindow_drawWindow.call(this, x, y);
+ItemInfoWindow._adjustWindow = function(x, y, isSubwindow) {
+	var w, h;
+	var obj = {
+			x: x,
+			y: y
+		};
 	
-	this._drawSubWindow(x, y);
+	if (isSubwindow) {
+		w = this._isSubWidowEnabled ? this.getWindowWidth() + this._getSubWindowWidth() : this.getWindowWidth();
+		h = this.getWindowHeight() > this._subWindowHeight ? this.getWindowHeight() : this._subWindowHeight;
+	}
+	else {
+		w = this.getWindowWidth();
+		h = this.getWindowHeight();
+	}
+	
+	if (x + w > root.getGameAreaWidth()) {
+		obj.x -= x + w - root.getGameAreaWidth();
+		obj.x -= 8;
+	}
+	
+	if (y + h > root.getGameAreaHeight()) {
+		obj.y -= y + h - root.getGameAreaHeight();
+		obj.y -= 8;
+	}
+	
+	return obj;
 };
 
 ItemInfoWindow._drawSubWindow = function(x, y) {
@@ -179,6 +229,21 @@ ItemInfoWindow.drawWindowSubContent = function(x, y) {
 		y += this._subGroupArray[i].getItemSentenceCount(this._state) * ItemInfoRenderer.getSpaceY();
 	}
 };
+
+// 左シフト長押しのアナウンス
+var _AdditionState_drawItemSentence = ItemSentence.AdditionState.drawItemSentence;
+ItemSentence.AdditionState.drawItemSentence = function(x, y, item) {
+	if (!this._isState(item)) {
+		return;
+	}
+	
+	if (!SubWindowDrawType && this._itemInfoWindow._isSubWidowEnabled) {
+		TextRenderer.drawSignText(x, y + 12, 'Hold Shift');
+	}
+	
+	_AdditionState_drawItemSentence.call(this, x, y, item);
+};
+
 
 // ステート情報と描画処理を取得
 ItemInfoWindow._configureStateInfo = function(groupArray) {
