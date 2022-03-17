@@ -7,8 +7,7 @@ ver.1.255
 
 ■プラグインの概要
 ステートを付与する武器、アイテム、スキル(*1)のアイテム情報ウィンドウに付与ステートの情報を別ウィンドウで表示します。
-武器とアイテムの場合は、左シフトキー(※2)を押している間、ステート情報ウィンドウが表示されます。
-(スキル情報では、常時ステート情報をサブウィンドウで表示します)
+設定を変更することで、左シフトキー(※2)を押している間、ステート情報ウィンドウが表示する形式にできます。
 
 *1 表示可能なステートは、武器およびステート付与アイテムのデータで設定したステート、
 スキルの場合はエディタのステート攻撃で設定したステートに限られます。
@@ -16,13 +15,18 @@ ver.1.255
 また複数ステートを付与できるような場合でも表示可能なステート情報は１つだけです。
 
 ※2 game.iniファイルで[Keyboard] OPTION2=shiftに設定しているキーに対応しています。
+ユーザーがgame.iniの設定を変更していた場合、対応するキーも変化します。
 
 ■使用方法
 1.本プラグインをPluginフォルダに入れる
 
-※ステート情報を左シフトキーを押している間のみ表示する仕様にしたい場合は下記コード内(55行目)で
-SubWindowDrawType = false;
+※ステート情報を左シフトキーを押している間のみ表示する仕様にしたい場合は下記コード内(58行目付近)で
+ITEM_SubWindowDrawType = false;
 のように書き換えてください。(true:常時表示、false:左シフトキー押下中のみ)
+
+同様にスキル情報ウィンドウでステート情報の表示方法を変更する場合は
+SKILL_SubWindowDrawType = false;
+真偽値を変更してください。
 
 ・オプション1
 o-to氏のプラグインでステータスにEPまたはFPを導入している場合にステート情報に回復値を表示したい場合
@@ -46,13 +50,19 @@ ran
 2022/03/10 新規作成
 2022/03/12　ショップ(ShopLayoutScreen)ではステート情報を表示しない仕様にした
 2022/03/16 左Shiftキーを押している場合にステート情報ウィンドウを表示する仕様を導入(武器とアイテムの場合。スキルでは常時表示)
+2022/03/16 スキルウィンドウでも左シフトキーでステート情報の表示を切り替えできるようにした
 
 */
 
 (function() {
 
-// ステートウィンドウを常時表示する:true / 左Shiftキーを押している場合に表示:false
-var SubWindowDrawType = true;
+// アイテム、武器情報で ステートウィンドウを常時表示する:true / 左Shiftキーを押している場合に表示:false
+var ITEM_SubWindowDrawType = false;
+
+// スキル情報で ステートウィンドウを常時表示する:true / 左Shiftキーを押している場合に表示:false
+var SKILL_SubWindowDrawType = false;
+
+var KEY_NEME = 'Hold Shift';
 
 //---------------------------------------------------
 // o-to氏のプラグインでステータスにEPまたはFPを導入している場合に
@@ -135,7 +145,7 @@ var _ItemInfoWindow_drawWindow = ItemInfoWindow.drawWindow;
 ItemInfoWindow.drawWindow = function(x, y) {
 	var obj;
 	
-	if (SubWindowDrawType) {
+	if (ITEM_SubWindowDrawType) {
 		obj = this._adjustWindow(x, y, true);
 		x = obj.x;
 		y = obj.y;
@@ -157,6 +167,7 @@ ItemInfoWindow.drawWindow = function(x, y) {
 		obj = this._adjustWindow(x, y, false);
 		x = obj.x;
 		y = obj.y;
+		
 		_ItemInfoWindow_drawWindow.call(this, x, y);
 	}
 };
@@ -237,8 +248,8 @@ ItemSentence.AdditionState.drawItemSentence = function(x, y, item) {
 		return;
 	}
 	
-	if (!SubWindowDrawType && this._itemInfoWindow._isSubWidowEnabled) {
-		TextRenderer.drawSignText(x, y + 12, 'Hold Shift');
+	if (!ITEM_SubWindowDrawType && this._itemInfoWindow._isSubWidowEnabled) {
+		TextRenderer.drawSignText(x, y + 12, KEY_NEME);
 	}
 	
 	_AdditionState_drawItemSentence.call(this, x, y, item);
@@ -331,23 +342,62 @@ SkillInfoWindow._getSubWindowWidth = function() {
 // ウィンドウが見切れた場合は位置を補正する
 var _SkillInfoWindow_drawWindow = SkillInfoWindow.drawWindow;
 SkillInfoWindow.drawWindow = function(x, y) {
+	var obj;
+	
+	if (SKILL_SubWindowDrawType) {
+		obj = this._adjustWindow(x, y, true);
+		x = obj.x;
+		y = obj.y;
+		
+		_SkillInfoWindow_drawWindow.call(this, x, y);
+		
+		this._drawSubWindow(x, y);
+	}	
+	else if (root.isInputState(InputType.BTN4)) {
+		obj = this._adjustWindow(x, y, true);
+		x = obj.x;
+		y = obj.y;
+		
+		_SkillInfoWindow_drawWindow.call(this, x, y);
+		
+		this._drawSubWindow(x, y);
+	}
+	else {
+		obj = this._adjustWindow(x, y, false);
+		x = obj.x;
+		y = obj.y;
+		
+		_SkillInfoWindow_drawWindow.call(this, x, y);
+	}
+};
+
+SkillInfoWindow._adjustWindow = function(x, y, isSubwindow) {
 	var w, h;
+	var obj = {
+			x: x,
+			y: y
+		};
 	
-	w = this._isSubWidowEnabled ? this.getWindowWidth() + this._getSubWindowWidth()　: this.getWindowWidth();
+	if (isSubwindow) {
+		w = this._isSubWidowEnabled ? this.getWindowWidth() + this._getSubWindowWidth() : this.getWindowWidth();
+		h = this.getWindowHeight() > this._subWindowHeight ? this.getWindowHeight() : this._subWindowHeight;
+	}
+	else {
+		w = this.getWindowWidth();
+		h = this.getWindowHeight();
+	}
+	
 	if (x + w > root.getGameAreaWidth()) {
-		x -= x + w - root.getGameAreaWidth();
-		x -= 8;
+		obj.x -= x + w - root.getGameAreaWidth();
+		obj.x -= 8;
 	}
 	
-	h = this.getWindowHeight() > this._subWindowHeight ? this.getWindowHeight() : this._subWindowHeight;
 	if (y + h > root.getGameAreaHeight()) {
-		y -= y + h - root.getGameAreaHeight();
-		y -= 8;
+		obj.y -= y + h - root.getGameAreaHeight();
+		obj.y -= 8;
 	}
 	
-	_SkillInfoWindow_drawWindow.call(this, x, y);
-	
-	this._drawSubWindow(x, y);
+	return obj;
 };
 
 SkillInfoWindow._drawSubWindow = function(x, y) {
@@ -901,5 +951,67 @@ ItemSentenceStateInfo.TurnChangeValue = defineObject(BaseItemSentence,
 }
 );
 
+//-----------------------------------
+//　スキル情報ウィンドウに付与ステート名を表示
+//-----------------------------------
+var _SkillInfoWindow_drawWindowContent = SkillInfoWindow.drawWindowContent;
+SkillInfoWindow.drawWindowContent = function(x, y) {
+	if (this._skill === null) return;
+	
+	var length = this._getTextLength();
+	var textui = this.getWindowTextUI();
+	var font = textui.getFont();
+	var text = '';
+	var objecttype = this._objecttype;
+	var skilltype, state, list, id;
+	var dx = ItemInfoRenderer.getSpaceX();
+		
+	_SkillInfoWindow_drawWindowContent.call(this, x, y);
+	y += _SkillInfoWindow_getWindowHeight.call(this) - ItemInfoRenderer.getSpaceY();
+
+	skilltype = this._skill.getSkillType();
+	if (skilltype === SkillType.STATEATTACK
+		|| typeof this._skill.custom.SkillInfo_stateid === 'number'
+	) {
+		list = root.getBaseData().getStateList();
+		text = '付与';
+		
+		if (skilltype === SkillType.STATEATTACK) {
+			id = this._skill.getSkillValue();
+			state = list.getDataFromId(id);
+		}
+		else if (typeof this._skill.custom.SkillInfo_stateid === 'number') {
+			id = this._skill.custom.SkillInfo_stateid;
+			state = list.getDataFromId(id);
+		}
+		
+		if (state !== null) {
+			TextRenderer.drawKeywordText(x, y, text, length, ColorValue.KEYWORD, font);
+
+			TextRenderer.drawKeywordText(x + dx, y, state.getName(), length, ColorValue.DEFAULT, font);
+			
+			if (!SKILL_SubWindowDrawType && this._isSubWidowEnabled) {
+				TextRenderer.drawSignText(x, y + 12, KEY_NEME);
+			}
+			
+			y += ItemInfoRenderer.getSpaceY();
+		}
+	}
+};
+
+var _SkillInfoWindow_getWindowHeight = SkillInfoWindow.getWindowHeight;
+SkillInfoWindow.getWindowHeight = function() {
+	var height = _SkillInfoWindow_getWindowHeight.call(this);
+	
+	if (this._skill === null) return height;
+	
+	if (this._skill.getSkillType() === SkillType.STATEATTACK
+		|| typeof this._skill.custom.SkillInfo_stateid === 'number'
+	) {
+		height +=  ItemInfoRenderer.getSpaceY();
+	}
+	
+	return height;
+};
 
 })();
