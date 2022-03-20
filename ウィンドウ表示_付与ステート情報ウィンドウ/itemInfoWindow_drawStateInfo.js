@@ -51,17 +51,19 @@ ran
 2022/03/12　ショップ(ShopLayoutScreen)ではステート情報を表示しない仕様にした
 2022/03/16 左Shiftキーを押している場合にステート情報ウィンドウを表示する仕様を導入(武器とアイテムの場合。スキルでは常時表示)
 2022/03/17 スキルウィンドウでも左シフトキーでステート情報の表示を切り替えできるようにした
+2022/03/20 ストック交換では、サブウィンドウを表示しない仕様にした
 
 */
 
 (function() {
 
 // アイテム、武器情報で ステートウィンドウを常時表示する:true / 左Shiftキーを押している場合に表示:false
-var ITEM_SubWindowDrawType = false;
+var ITEM_SubWindowDrawType = true;
 
 // スキル情報で ステートウィンドウを常時表示する:true / 左Shiftキーを押している場合に表示:false
-var SKILL_SubWindowDrawType = false;
+var SKILL_SubWindowDrawType = true;
 
+// サブウィンドウを表示する際に押し続けるキーのアナウンス文
 var KEY_NEME = 'Hold Shift';
 
 //---------------------------------------------------
@@ -517,6 +519,16 @@ ItemInfoRenderer._drawDopingState = function(x, y, arr) {
 var _ShopLayoutScreen__prepareScreenMemberData = ShopLayoutScreen._prepareScreenMemberData;
 ShopLayoutScreen._prepareScreenMemberData = function(screenParam) {
 	_ShopLayoutScreen__prepareScreenMemberData.call(this, screenParam);
+	
+	this._itemInfoWindow._isSubWidowDisalbed = true;
+};
+
+//---------------------------------------------------------------
+// _stockItemWindowの下に描画されるためサブウィンドウ表示を不許可にしている
+//---------------------------------------------------------------
+var _StockItemTradeScreen__prepareScreenMemberData = StockItemTradeScreen._prepareScreenMemberData;
+StockItemTradeScreen._prepareScreenMemberData = function(screenParam) {
+	_StockItemTradeScreen__prepareScreenMemberData.call(this, screenParam);
 	
 	this._itemInfoWindow._isSubWidowDisalbed = true;
 };
