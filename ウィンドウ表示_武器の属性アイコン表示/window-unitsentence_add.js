@@ -17,6 +17,7 @@ ran
 ■更新履歴
 2021/12/01 新規作成
 2021/12/14　iconhandleの取得をdrawメソッドではなく、setCalculatorValueメソッドで取得する処理に変更
+2022/04/06 武器を装備していない場合の不具合を修正
 
 */
 
@@ -83,8 +84,8 @@ UnitSentence.Power.drawUnitSentence = function(x, y, unit, weapon, totalStatus) 
 	alias002.call(this, x, y, unit, weapon, totalStatus);
 	
 	// 物理・魔法攻撃をアイコンで表示
-//	if (this._iconhandle.isNullHandle()) root.log('アイコンhandleの指定が不正です');
-	if (!this._iconhandle.isNullHandle()) {
+//	if (this._iconhandle === null) root.log('アイコンhandleの指定が不正です');
+	if (weapon !== null && this._iconhandle !== null) {
 		GraphicsRenderer.drawImage(x + dx, y + dy, this._iconhandle, GraphicsType.ICON);
 	}
 };
