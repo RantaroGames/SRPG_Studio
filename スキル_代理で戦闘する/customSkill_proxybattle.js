@@ -111,7 +111,7 @@ var Fnc_createAttackParam_getProxyTareget = function(attackParam) {
 					}
 					
 					proxyBattler = targetUnit;
-					root.log(proxyBattler.getName() + ' skill:' + skill.getName());
+					//root.log(proxyBattler.getName() + ' skill:' + skill.getName());
 					break;
 				}
 			} 
