@@ -1,3 +1,27 @@
+/*
+■ファイル
+CurrentmapPlaceEventNotice.js
+
+■プラグインの概要
+場所イベントを設定している時、マップ上にイベント内容を示すアイコンを表示する
+
+■アイコン表示の注意点
+「実行済みではない」　かつ　「実行条件を満たしている」　場所イベントのみアイコンを表示します。
+
+■使用方法
+1.このファイルをpluginフォルダに入れる
+2.場所イベントの詳細情報でアイコンを設定する
+
+■SRPG Studio対応バージョン:1.224
+
+■作成者
+ran
+
+■更新履歴
+2022/04/10 プラグインの説明文を追記
+
+*/
+
 (function(){
 /*
 constants-enumeratedtype.js
@@ -37,6 +61,7 @@ function f_checkSceneType()
 		// マップが開かれているシーン以外でmapInfoなどを取得しようとするとゲームの起動ができなくなる
 		if (!f_checkSceneType()) return;
 		
+		// アイコン表示はプレイヤーターンのみ表示する
 		if (session.getTurnType() !== TurnType.PLAYER) return;
 		
 		list = session.getPlaceEventList();
@@ -122,6 +147,8 @@ function f_checkSceneType()
 	
 		var session = root.getCurrentSession();
 		if (session === null) return;
+		
+		if (session.getTurnType() !== TurnType.PLAYER) return;
 		
 		// マップが開かれているシーン以外でmapInfoなどを取得しようとするとゲームの起動ができなくなる
 //		if (!f_checkSceneType()) return;
