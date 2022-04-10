@@ -79,13 +79,13 @@ function f_getAttackStatus(unit, targetUnit, isSrc)
 	var arr, weapon;
 	
 	if (isSrc) {
-		weapon = ItemControl.getEquippedWeapon(unit);
+		weapon = BattlerChecker.getRealBattleWeapon(unit);
 		arr = AttackChecker.getAttackStatusInternal(unit, weapon, targetUnit);
 	}
 	else {
 		isCounterattack = AttackChecker.isCounterattack(unit, targetUnit);
 		if (isCounterattack) {
-			weapon = ItemControl.getEquippedWeapon(targetUnit);
+			weapon = BattlerChecker.getRealBattleWeapon(targetUnit);
 			arr = AttackChecker.getAttackStatusInternal(targetUnit, weapon, unit);
 		}
 		else {
