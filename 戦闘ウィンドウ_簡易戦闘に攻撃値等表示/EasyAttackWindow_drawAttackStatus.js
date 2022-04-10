@@ -15,6 +15,7 @@ ran
 
 ■更新履歴
 2021/11/19 作成
+2022/04/10 変数宣言ミスの修正
 
 */
 
@@ -76,7 +77,7 @@ EasyAttackMenu.setMenuUnit = function(unitSrc, unitDest) {
 // UIBattleLayout._getAttackStatus関数とほぼ同じ
 function f_getAttackStatus(unit, targetUnit, isSrc)
 {
-	var arr, weapon;
+	var arr, weapon, isCounterattack;
 	
 	if (isSrc) {
 		weapon = BattlerChecker.getRealBattleWeapon(unit);
