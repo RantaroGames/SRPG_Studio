@@ -16,6 +16,7 @@ ran
 ■更新履歴
 2021/11/19 作成
 2022/04/10 変数宣言ミスの修正
+2022/04/11 反撃の可否を判定する処理を変更
 
 */
 
@@ -84,7 +85,7 @@ function f_getAttackStatus(unit, targetUnit, isSrc)
 		arr = AttackChecker.getAttackStatusInternal(unit, weapon, targetUnit);
 	}
 	else {
-		isCounterattack = AttackChecker.isCounterattack(unit, targetUnit);
+		isCounterattack = AttackControl.getAttackInfo().isCounterattack; //AttackChecker.isCounterattack(unit, targetUnit);
 		if (isCounterattack) {
 			weapon = BattlerChecker.getRealBattleWeapon(targetUnit);
 			arr = AttackChecker.getAttackStatusInternal(targetUnit, weapon, unit);
