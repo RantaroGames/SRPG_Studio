@@ -149,7 +149,7 @@ var InducedExplosionFlowEntry = defineObject(BaseFlowEntry,
 		var targetUnit, i, generator, isRuntime, id;
 		var passiveUnit = preAttack.getPassiveUnit();
 
-		// 起点ユニットが「生存」or「消去」の場合は、この時点で処理を終了する
+		// 起点ユニットが「生存」or「消去」の場合は、この時点で処理を終了する　「捕獲」された敵はこの時点では「生存」状態になっている
 		if (passiveUnit.getAliveState() === AliveType.ALIVE || passiveUnit.getAliveState() === AliveType.ERASE) {
 			return EnterResult.NOTENTER;
 		}
