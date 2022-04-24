@@ -154,7 +154,7 @@ var InducedExplosionFlowEntry = defineObject(BaseFlowEntry,
 			return EnterResult.NOTENTER;
 		}
 				
-		root.log('passiveUnit:' + passiveUnit.getName());
+		//root.log('passiveUnit:' + passiveUnit.getName());
 		
 		var skill = this._getSkill(passiveUnit);
 		if (skill === null) {
@@ -188,7 +188,7 @@ var InducedExplosionFlowEntry = defineObject(BaseFlowEntry,
 			targetUnit = PosChecker.getUnitFromPos(posX + XPoint[i], posY + YPoint[i]);
 		
 			if (targetUnit !== null) {
-				root.log('t' + i + ': ' + targetUnit.getName());
+				//root.log('t' + i + ': ' + targetUnit.getName());
 				this._setDynamicEvent(passiveUnit, targetUnit, generator);
 			}
 		}
