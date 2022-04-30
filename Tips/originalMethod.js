@@ -99,7 +99,7 @@ function F_setUnitCustomParameter(value)
 	var keyword = content.getCustomKeyword();
 	
 	if (unit === null || keyword === '') {
-		return -1;
+		return;
 	}
 	
 	unit.custom[keyword] = value;
