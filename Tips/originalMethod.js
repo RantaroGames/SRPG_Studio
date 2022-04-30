@@ -36,10 +36,10 @@ function F_getTerrainGroupId(x, y, isLayer)
 // ゲストユニットのアイテム増減を一時的に許可するカスタムパラメータを設定します
 // コンフィグの設定「ゲストユニットのアイテム増減を有効にする」の設定よりも優先されます
 // このメソッドを利用する場合は、
-// 使用方法：スクリプトの実行>　コード実行でF_setUnitCustomParameter(value)を記述し、オリジナルデータでゲストユニットを指定する
+// 使用方法：スクリプトの実行>　コード実行でF_setItemAccessGuestUnit(value)を記述し、オリジナルデータでゲストユニットを指定する
 // ・Parameters
 // {boolean} value アイテム増減を許可する場合 true, 許可しない場合 false
-function F_setUnitCustomParameter(value)
+function F_setItemAccessGuestUnit(value)
 {
 	var content = root.getEventCommandObject().getOriginalContent();
 	var unit = content.getUnit();
@@ -66,3 +66,43 @@ Miscellaneous.isItemAccess = function(unit) {
 
 })();
 //----------ここまで
+
+
+// ユニットが持つカスタムパラメータから指定したパラメータの値を取得します
+// 使用方法：スクリプトの実行>　コード実行でF_getUnitCustomParameter();を記述し
+// オリジナルデータのユニットで指定し、キーワードに取得したいカスタムパラメータの名前を記述します
+// 戻り値が数値の場合は、変数で受け取ることができます
+function F_getUnitCustomParameter()
+{
+	var content = root.getEventCommandObject().getOriginalContent();
+	var unit = content.getUnit();
+	var keyword = content.getCustomKeyword();
+	
+	if (unit === null || keyword === '') {
+		return -1;
+	}
+	
+	return unit.custom[keyword];
+}
+//----------ここまで
+
+
+// ユニットが持つカスタムパラメータの中で指定したパラメータに任意の値を設定します
+// 使用方法：スクリプトの実行>　コード実行でF_setUnitCustomParameter(value);を記述し
+// オリジナルデータのユニットで指定し、キーワードに操作したいカスタムパラメータの名前を記述します
+// 引数(value)の値をカスタムパラメータに設定することができます
+// 指定した名前のカスタムパラメータが存在しなかった場合、新たに(値と共に)設定されます
+function F_setUnitCustomParameter(value)
+{
+	var content = root.getEventCommandObject().getOriginalContent();
+	var unit = content.getUnit();
+	var keyword = content.getCustomKeyword();
+	
+	if (unit === null || keyword === '') {
+		return -1;
+	}
+	
+	unit.custom[keyword] = value;
+}
+//----------ここまで
+
