@@ -61,7 +61,7 @@ BattleSetupScene.getRequiredSotieCount = function() {
 			requiredSotieCount = SortieSetting.getDefaultSortieMaxCount();
 		}
 			
-		return Math.floor(requiredSotieCount);
+		return requiredSotieCount;
 	}
 	return 0;
 };
