@@ -82,7 +82,7 @@ CombinationManager.getEstimateCombination_Ex = function(unit) {
 	var misc = CombinationBuilder.createMisc(unit, simulator);
 	
 	//検索範囲を移動力×カスパラで限定
-	var unitmov = ParamBonus.getMov(unit)
+	var unitmov = ParamBonus.getMov(unit);
 	var simulateRange = unitmov * 2;
 	if (typeof unit.custom.searchrange === 'number') {
 		simulateRange = Math.ceil(unitmov * unit.custom.searchrange);
