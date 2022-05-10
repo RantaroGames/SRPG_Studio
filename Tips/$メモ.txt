@@ -1,0 +1,41 @@
+スクリプト・リファレンスを参照
+
+rootメソッド
+
+リソースハンドルを作成します。
+{ResourceHandle} createResourceHandle(isRuntime, id, colorIndex, xSrc, ySrc)
+Parameters
+{boolean} isRuntime ランタイムの場合はtrue、そうでない場合はfalse
+{number} id 参照するid
+{number} colorIndex 色のインデックス
+{number} xSrc 画像元のx座標
+{number} ySrc 画像元のy座標
+
+Returns
+{ResourceHandle} リソースハンドル
+※リソースの存在の有無は考慮しない
+
+
+空のリソースハンドルを作成します。
+{ResourceHandle} createEmptyHandle()
+Returns
+
+{ResourceHandle} リソースハンドル
+※「空のリソースハンドル」というオブジェクトを返す
+※ nullを返すのではない！!!
+
+戻り値のプロパティの値は
+{
+ isRuntime: 2,// isNullHandle()は、この値が2の場合、trueを返す？
+ id: 0,
+ colorIndex: 0,
+ xSrc: 0,
+ ySrc: 0
+}
+
+ResourceHandle
+空のハンドルである場合はtrue、そうでない場合はfalseを返します。
+{boolean} isNullHandle()
+
+Returns
+{boolean} 真偽値
