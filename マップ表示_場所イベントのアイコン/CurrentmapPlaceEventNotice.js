@@ -73,7 +73,7 @@ function f_checkSceneType()
 				placeInfo = placeEvent.getPlaceEventInfo();
 				
 				//　イベントの詳細情報から指定できるアイコン(エディタのイベントリストに表示されるもの)を使用する
-				// if(handle === null)ではなく、isNullHandle()メソッドで判定しないとnullとして判定されない模様
+				// アイコン「なし」は、if(handle === null)ではなく、isNullHandle()メソッドで判定する（空のリソースハンドルが生成されている）
 				handle = placeEvent.getIconResourceHandle();
 //				if (handle.isNullHandle()) root.log(placeInfo.getX() + ': '+ placeInfo.getY());
 //				root.log('placeEvent: ' + placeInfo.getX() + ': '+ placeInfo.getY() + ' type:' + placeInfo.getPlaceEventType());
