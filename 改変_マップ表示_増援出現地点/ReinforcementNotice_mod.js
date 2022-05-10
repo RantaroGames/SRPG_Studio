@@ -181,7 +181,10 @@ ran
 							handle = root.createResourceHandle(ENEMYTURN_APPEAE_ICON.isRuntime, ENEMYTURN_APPEAE_ICON.id, 0, ENEMYTURN_APPEAE_ICON.xSrc, ENEMYTURN_APPEAE_ICON.ySrc);
 						}
 						
-						if (handle.isNullHandle()) continue;
+						// isNullHandle()は「空のリソースハンドル」というオブジェクトか否かを判定している 「空のリソースハンドル」はroot.createEmptyHandle()メソッドで生成する
+						// root.createResourceHandle(isRuntime, id, colorIndex, xSrc, ySrc)メソッドはオブジェクトを返す(nullを返さない。リソースの存在の有無を考慮しない)
+						// そのため、以下のif文が実行されることは無い？
+						if (handle.isNullHandle() || handle === null) continue;
 						
 						// 出現地点座標x,yとiconハンドルを配列に格納
 						this._ReinforcementNoticeArr.push([x, y, handle]);
