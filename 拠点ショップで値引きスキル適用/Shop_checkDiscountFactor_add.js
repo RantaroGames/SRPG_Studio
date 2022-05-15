@@ -1,4 +1,11 @@
 /*
+
+※公式のプラグインに同等の機能を有するプラグインが公開されています。
+
+other-shopnegotiator.js
+
+上記プラグインの利用を推奨します（本プラグインとの併用は避けてください）
+
 ■ファイル
 Shop_checkDiscountFactor_add.js
 
