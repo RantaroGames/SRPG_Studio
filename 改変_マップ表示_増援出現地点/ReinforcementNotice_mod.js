@@ -87,7 +87,7 @@ ran
 	//-------------------------------------------------------------------------
 	
 	var alias = MapLayer.drawUnitLayer;
-	MapLayer._preTurnCount = 0;
+
 	MapLayer.drawUnitLayer = function() {
 		var turnType;
 		var session = root.getCurrentSession();
@@ -106,11 +106,8 @@ ran
 		if (session !== null) {
 			turnType = session.getTurnType();
 			
-			if (turnType === TurnType.PLAYER && this._counter.getAnimationIndex2() % 2 === 0 && session.getTurnCount() > this._preTurnCount) {
+			if (turnType === TurnType.PLAYER && this._counter.getAnimationIndex2() % 2 === 0) {
 				this._drawReinforcementNotice(this._ReinforcementNoticeArr, session);
-			}
-			else if (turnType === TurnType.ENEMY) {
-				this._preTurnCount = session.getTurnCount();
 			}
 		}
 	};
@@ -155,6 +152,7 @@ ran
 			posDataCount = posData.getReinforcementPageCount();
 			x = posData.getX();
 			y = posData.getY();
+			handle = null;
 
 			for (j = 0; j < posDataCount; j++) {
 				pageData = posData.getReinforcementPage(j);
@@ -184,7 +182,7 @@ ran
 						// isNullHandle()は「空のリソースハンドル」というオブジェクトか否かを判定している 「空のリソースハンドル」はroot.createEmptyHandle()メソッドで生成する
 						// root.createResourceHandle(isRuntime, id, colorIndex, xSrc, ySrc)メソッドはオブジェクトを返す(nullを返さない。リソースの存在の有無を考慮しない)
 						// そのため、以下のif文が実行されることは無い？
-						if (handle.isNullHandle() || handle === null) continue;
+						if (handle === null) continue;
 						
 						// 出現地点座標x,yとiconハンドルを配列に格納
 						this._ReinforcementNoticeArr.push([x, y, handle]);
