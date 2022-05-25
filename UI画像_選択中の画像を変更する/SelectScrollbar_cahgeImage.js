@@ -40,8 +40,8 @@ ran
 
 // Materialフォルダーに作成したフォルダ名とファイル名(拡張子付き)を記述する
 var GetMaterialImage = {
-	 Folder: 'SelectScrollbarTitle'
-   , File:  '巨大_offitial改変.png'
+	Folder: 'SelectScrollbarTitle',
+	File:  '巨大_offitial改変.png'
 };
 
 // 選択中の項目は、画像をMaterialフォルダに作成した物に置き換える
