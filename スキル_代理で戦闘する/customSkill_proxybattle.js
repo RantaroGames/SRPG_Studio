@@ -25,6 +25,9 @@ o-to氏作のOT_ExtraConfigSkillプラグインには、暫定的に対応して
 ■作成者
 ran
 
+■利用規約
+https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78cb3ab12c3/README.md
+
 ■更新履歴
 2021/12/07 新規作成
 2021/12/20 強制戦闘ではスキル発動を許可しない方式に変更
