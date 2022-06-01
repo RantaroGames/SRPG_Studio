@@ -23,6 +23,10 @@ value = 判定に使用する数値
 ページ指定が不正だった場合は、オブジェクトが取得できずnullとなってエラーになります
 
 ■SRPG Studio対応バージョン:1.220
+
+■利用規約
+https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78cb3ab12c3/README.md
+
 */
 
 //スクリプト--------
