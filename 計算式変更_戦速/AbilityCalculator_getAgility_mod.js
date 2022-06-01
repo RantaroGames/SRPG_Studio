@@ -21,6 +21,9 @@ AbilityCalculator.getAgilityの処理をコメントアウト/解除してくだ
 ■作成者
 ran
 
+■利用規約
+https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78cb3ab12c3/README.md
+
 ■更新履歴
 2022/01/27 新規作成
 
