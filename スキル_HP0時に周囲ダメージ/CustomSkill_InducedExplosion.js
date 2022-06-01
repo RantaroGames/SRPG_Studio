@@ -71,6 +71,9 @@ damageTypeが1or2の時、地形効果込みの防御力(物理/魔法)が適用
 ■作成者
 ran
 
+■利用規約
+https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78cb3ab12c3/README.md
+
 ■更新履歴
 2022/02/01 新規作成
 
