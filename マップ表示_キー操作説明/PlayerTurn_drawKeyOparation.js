@@ -14,6 +14,10 @@ PlayerTurn_drawKeyOparation.js
 
 ■作成者
 ran
+
+■利用規約
+https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78cb3ab12c3/README.md
+
 */
 
 (function() {
