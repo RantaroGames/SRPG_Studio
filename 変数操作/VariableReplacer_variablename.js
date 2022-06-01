@@ -29,6 +29,9 @@ VariableReplacer_variablename.js
 ・自軍加入済みユニットの現在の名前を取得する制御文字
 \tpn[ユニットid]
 
+■利用規約
+https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78cb3ab12c3/README.md
+
 ■作成者
 ran
 
