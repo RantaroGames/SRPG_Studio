@@ -10,7 +10,8 @@ ContentRenderer_mod.js
 
 ■使用方法
 1.このファイルをpluginフォルダに入れる
-
+2.顔画像の表示サイズを変更したい場合は、下記コード内「 FaceSize = 72 」の値を変更する
+  同様にキャラチップも並べて表示したい場合、「　CharaChipisDraw = false　」をtrueに変更する
 
 ■作成者
 ran
@@ -28,7 +29,10 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 //-------------------------------------------------
 // 表示設定
 //-------------------------------------------------
-//戦闘準備画面でキャラチップも表示する場合は、true
+// 顔画像の表示サイズ
+var FaceSize = 72;
+
+// 戦闘準備画面でキャラチップも表示する場合は、true
 var CharaChipisDraw = false;
 
 
@@ -71,8 +75,6 @@ var ContentRenderer_Mod = {
 }
 
 // 戦闘準備画面でユニット一覧に顔画像を表示する処理
-//　キャラチップも表示したい場合は、本コード内(32行付近)のCharaChipisDrawの値をtrueに変更してください
-
 // プラグインの競合が発生している場合、本プラグインのUnitSelectScrollbar.drawScrollContentオブジェクトをコメントアウトして
 // UnitSelectScrollbar.drawScrollContentを変更しているプラグインにマージしてください。
 // ↓ ここからコメントアウト
@@ -109,11 +111,10 @@ UnitSelectScrollbar.drawScrollContent = function(x, y, object, isSelect, index) 
 	// 戦闘準備画面で描画するオブジェクトの高さは規定で80(UnitSelectScrollbar.getObjectHeight())
 	// 96*96だとはみ出るので縮小して描画する。
 	// dx, dyの値を変更すると顔画像の描画位置を調整できます。
-	var size = 72;
 	var dy = -8;
 		dx = -8;
 
-	ContentRenderer_Mod.drawStretchUnitFace(x　+ dx, y + dy, unit, false, alpha, size);
+	ContentRenderer_Mod.drawStretchUnitFace(x　+ dx, y + dy, unit, false, alpha, FaceSize);
 	// ↑ ここまで
 	
 	// 名前を指定した範囲に描画する処理
