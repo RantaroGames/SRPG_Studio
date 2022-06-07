@@ -99,7 +99,7 @@ UnitSortieScreen._drawSortieText = function(textui) {
 
 // 最低出撃数を表示する処理
 UnitSortieScreen._drawRequiredSotieCount = function(x, y, textui) {
-	var text = '最低出撃数 ';
+	var text = '必要出撃数 ';
 	var color = textui.getColor();
 	var font = textui.getFont();
 	var dx = DefineControl.getNumberSpace();
