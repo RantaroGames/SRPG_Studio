@@ -40,9 +40,6 @@ function F_getTerrainGroupId(x, y, isLayer)
 */
 
 
-// ゲストユニットのアイテム増減を一時的に許可するカスタムパラメータを設定します
-// コンフィグの設定「ゲストユニットのアイテム増減を有効にする」の設定よりも優先されます
-// このメソッドを利用する場合は、
 // 使用方法：スクリプトの実行>　コード実行でF_setItemAccessGuestUnit(value)を記述し、オリジナルデータでゲストユニットを指定する
 // ・Parameters
 // {boolean} value アイテム増減を許可する場合 true, 許可しない場合 false
@@ -56,8 +53,10 @@ function F_setItemAccessGuestUnit(value)
 	unit.custom.IsItemAccess = value;
 }
 
+// ゲストユニットのアイテム増減を一時的に許可するカスタムパラメータを設定します
+// コンフィグの設定「ゲストユニットのアイテム増減を有効にする」の設定よりも優先されます
+// このメソッドを利用する場合は
 // 関数F_setUnitCustomParameter(value)と共に導入してください
-// エディタのコンフィグ設定をオーバーライドして独自の処理を優先させます
 (function(){
 
 var _Miscellaneous_isItemAccess = Miscellaneous.isItemAccess;
@@ -75,41 +74,93 @@ Miscellaneous.isItemAccess = function(unit) {
 //----------ここまで
 
 
-// ユニットが持つカスタムパラメータから指定したパラメータの値を取得します
-// 使用方法：スクリプトの実行>　コード実行でF_getUnitCustomParameter();を記述し
-// オリジナルデータのユニットで指定し、キーワードに取得したいカスタムパラメータの名前を記述します
-// 戻り値が数値の場合は、変数で受け取ることができます
-function F_getUnitCustomParameter()
-{
-	var content = root.getEventCommandObject().getOriginalContent();
-	var unit = content.getUnit();
-	var keyword = content.getCustomKeyword();
+
+/*
+ユニットが持つカスタムパラメータの中で指定したパラメータに任意の値を取得/設定します
+
+・カスタムパラメータを取得したい
+1.スクリプトの実行>　コード実行に以下を記述する
+UnitCustomParameterContorol.getUnitCustomParameter();
+
+2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
+  指定したユニットがnullまたはキーワードを指定しなかった場合、カスタムパラメータが存在しなかった場合は、'undefined'が返ります
+  
+・カスタムパラメータを設定したい
+1.スクリプトの実行>　コード実行に以下を記述する
+UnitCustomParameterContorol.setUnitCustomParameter(value);
+
+2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
+3.引数(value)をカスタムパラメータに設定したい値を記述する
+  value に指定する値は'Boolean', 'Number', 'String'型を推奨します
+  指定した名前のカスタムパラメータが存在しなかった場合、新たに(値と共に)設定されます
+  
+ ・オリジナルデータの数値(1~6)で取得した値をカスタムパラメータに設定したい
+1.スクリプトの実行>　コード実行に以下を記述する
+UnitCustomParameterContorol.setOriginalDataNumber(index);
+
+2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
+3.引数(index)に0～5の整数を記述する(数値1~6に対応しています)
+  indexで指定した数値の値がカスタムパラメータに設定されます(indexが不正な場合は、何もせず処理を終了します)
+  指定した名前のカスタムパラメータが存在しなかった場合、新たに(値と共に)設定されます
+*/
+
+var UnitCustomParameterContorol = {
+	_getOriginalContent: function() {
+		return root.getEventCommandObject().getOriginalContent();
+	},
 	
-	if (unit === null || keyword === '') {
-		return -1;
+	_getUnit: function() {
+		return this._getOriginalContent().getUnit();
+	},
+	
+	_getKeyWord: function() {
+		return this._getOriginalContent().getCustomKeyword();
+	},
+	
+	// 数値1~6を取得する(引数indexは0~5を指定)
+	_getValue: function(index) {
+		return this._getOriginalContent().getValue(index);
+	},
+	
+	getCustomParameter: function() {
+		var unit = this._getUnit();
+		var keyword = this._getKeyWord();
+		
+		if (unit === null || keyword === '') {
+			return;
+		}
+	
+		return unit.custom[keyword];
+	},
+	
+	setCustomParameter: function(value) {
+		var unit = this._getUnit();
+		var keyword = this._getKeyWord();
+		
+		if (unit === null || keyword === '') {
+			return;
+		}
+		
+		unit.custom[keyword] = value;
+	},
+	
+	// indexで指定したオリジナルデータの数値をカスタムパラメータに設定する
+	setOriginalDataNumber: function(index) {
+		var unit = this._getUnit();
+		var keyword = this._getKeyWord();
+		var value;
+		
+		if (unit === null || keyword === '') {
+			return;
+		}
+		
+		if (typeof index !== 'number' || index < 0 || index > 5) {
+//			root.log('index には 0~5 の整数を指定してください');
+			return;
+		}
+		
+		value = this._getValue(index);
+		
+		unit.custom[keyword] = value;
 	}
-	
-	return unit.custom[keyword];
-}
-//----------ここまで
-
-
-// ユニットが持つカスタムパラメータの中で指定したパラメータに任意の値を設定します
-// 使用方法：スクリプトの実行>　コード実行でF_setUnitCustomParameter(value);を記述し
-// オリジナルデータのユニットで指定し、キーワードに操作したいカスタムパラメータの名前を記述します
-// 引数(value)の値をカスタムパラメータに設定することができます
-// 指定した名前のカスタムパラメータが存在しなかった場合、新たに(値と共に)設定されます
-function F_setUnitCustomParameter(value)
-{
-	var content = root.getEventCommandObject().getOriginalContent();
-	var unit = content.getUnit();
-	var keyword = content.getCustomKeyword();
-	
-	if (unit === null || keyword === '') {
-		return;
-	}
-	
-	unit.custom[keyword] = value;
-}
-//----------ここまで
-
+};
