@@ -288,24 +288,19 @@ SkillInfoWindow.drawWindowContent = function(x, y) {
 	y += _SkillInfoWindow_getWindowHeight.call(this) - ItemInfoRenderer.getSpaceY();
 	
 	if (this._skill.getCustomKeyword() === 'InducedExplosion') {
-		text = 'ダメージ';
 		var customData = this._skill.custom.InducedExplosionData;
 		if (typeof customData === 'undefined') return;
 		var damage = typeof customData.damage === 'number' ? customData.damage : 10;
 		var damagetype = typeof customData.damageType === 'number' ? customData.damageType : DamageType.FIXED;
 		
-		function f_type(type) {
-			var text = '';
-			switch (type) {
-				case 0 : text = '(固定) '; break;
-				case 1 : text = '(物理) '; break;
-				case 2 : text = '(魔法) '; break;
-				default: text = '(固定) '; break;
-			}
-			return text;
+		text = 'ダメージ';
+		switch (damagetype) {
+			case 0 : text += '(固定) '; break;
+			case 1 : text += '(物理) '; break;
+			case 2 : text += '(魔法) '; break;
+			default: text += 'type不正'; break;
 		}
-		
-		text += f_type(damagetype) + damage;
+		text += damage;
 		
 		TextRenderer.drawKeywordText(x, y, text, length, color, font);
 		y += ItemInfoRenderer.getSpaceY();
