@@ -80,14 +80,14 @@ Miscellaneous.isItemAccess = function(unit) {
 
 ・カスタムパラメータを取得したい
 1.スクリプトの実行>　コード実行に以下を記述する
-UnitCustomParameterContorol.getUnitCustomParameter();
+UnitCustomParameterContorol.getCustomParameter();
 
 2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
   指定したユニットがnullまたはキーワードを指定しなかった場合、カスタムパラメータが存在しなかった場合は、'undefined'が返ります
   
 ・カスタムパラメータを設定したい
 1.スクリプトの実行>　コード実行に以下を記述する
-UnitCustomParameterContorol.setUnitCustomParameter(value);
+UnitCustomParameterContorol.setCustomParameter(value);
 
 2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
 3.引数(value)をカスタムパラメータに設定したい値を記述する
