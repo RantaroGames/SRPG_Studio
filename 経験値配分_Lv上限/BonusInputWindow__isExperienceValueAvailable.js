@@ -25,6 +25,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2022/07/11 新規作成
+2022/07/17 レベルキャップの上限値を表示するウィンドウを追加
 */
 
 (function() {
@@ -72,12 +73,11 @@ BonusInputWindow._getMessage = function() {
 		return StringTable.ExperienceDistribution_CannotLevelup;
 	}
 	else if (this._isLevelCapped) {
-		return '経験値配分できるLV上限を超えています';
+		return '経験値配分の上限Lvに達しています';
 	}
 	
 	return StringTable.ExperienceDistribution_BonusShortage;
 };
-
 
 
 //変数指定エラー時は、table:0, index:0の値が返る
@@ -88,5 +88,60 @@ function f_getVariable_value(page, id)
 	
 	return table.getVariable(index);
 }
+
+
+// レベルキャップの値を表示するためのウィンドウ
+ExperienceDistributionScreen._levelCaptWindow = null;
+
+var _ExperienceDistributionScreen__prepareScreenMemberData = ExperienceDistributionScreen._prepareScreenMemberData;
+ExperienceDistributionScreen._prepareScreenMemberData = function(screenParam) {
+	_ExperienceDistributionScreen__prepareScreenMemberData.call(this, screenParam);
+	this._levelCaptWindow = createWindowObject(LevelCapWindow, this);
+};
+
+var _ExperienceDistributionScreen_drawScreenCycle = ExperienceDistributionScreen.drawScreenCycle;
+ExperienceDistributionScreen.drawScreenCycle = function() {
+	_ExperienceDistributionScreen_drawScreenCycle.call(this);
+	
+	var width = this._levelupUnitWindow.getWindowWidth() + this._itemUserWindow.getWindowWidth();
+	var height = this._itemUserWindow.getWindowHeight();
+	var x = LayoutControl.getCenterX(-1, width);
+	var y = LayoutControl.getCenterY(-1, height);
+	
+	var xInfo = (x + width) - this._bonusPointWindow.getWindowWidth() - this._levelCaptWindow.getWindowWidth();
+	var yInfo = y - this._levelCaptWindow.getWindowHeight();
+	this._levelCaptWindow.drawWindow(xInfo, yInfo);
+};
+
+var LevelCapWindow = defineObject(BaseWindow,
+{
+	moveWindowContent: function() {
+		return MoveResult.END;
+	},
+	
+	drawWindowContent: function(x, y) {
+		var textui = this.getWindowTextUI();
+		var color = textui.getColor();
+		var font = textui.getFont();
+		var lvcapL = f_getVariable_value(LevelCapValue.VariablePage, LevelCapValue.LowerClassId);
+		var lvcapH = f_getVariable_value(LevelCapValue.VariablePage, LevelCapValue.UpperClassId);
+		
+		TextRenderer.drawKeywordText(x, y - 16, 'LevelCap', -1, ColorValue.KEYWORD, font);
+		
+		TextRenderer.drawKeywordText(x, y, '(下級)', -1, color, font);
+		NumberRenderer.drawNumber(x + 60, y, lvcapL);
+		TextRenderer.drawKeywordText(x　+ 90, y, '(上級)', -1, color, font);
+		NumberRenderer.drawNumber(x + 150, y, lvcapH);
+	},
+	
+	getWindowWidth: function() {
+		return 200;
+	},
+	
+	getWindowHeight: function() {
+		return 50;
+	}
+}
+);
 
 })();
