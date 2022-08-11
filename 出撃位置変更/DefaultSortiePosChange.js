@@ -54,6 +54,10 @@ NewDefaultSortiePosArray.setPosArray([]);
 シーンの変更を行う前にイベントコマンド〈スクリプトの実行〉・コード実行で下記のコードを実行してください
 NewDefaultSortiePosArray._deleteGlobal();
 
+・他のプラグインによってMapVictoryFlowEntryを介さずにシーン変更でマップを離れる場合、
+該当プラグイン内でシーン変更する処理の前に下記コードを追加してください
+NewDefaultSortiePosArray._deleteGlobal();
+
 ■作成者
 ran
 
