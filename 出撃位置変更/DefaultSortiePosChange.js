@@ -14,7 +14,7 @@ Ver 1.257以降でのみ使用可能
 1.このファイルをpluginフォルダに入れる
 
 2.イベントコマンド〈スクリプトの実行〉・コード実行に
-NewDefaultSortiePosArray.setPosArray(arr);を記述する
+NewDefaultSortiePos.setPosArray(arr);を記述する
 
 ※この関数は、オープニングイベントまたはコミュニケーションイベント内でのみ実行可能です
 
@@ -28,18 +28,18 @@ NewDefaultSortiePosArray.setPosArray(arr);を記述する
 ]
 
 ・記述例
-NewDefaultSortiePosArray.setPosArray(
+NewDefaultSortiePos.setPosArray(
  [ [3, 1], [4, 2], [5, 7], [2, 5] ]
 );
 
 指定した配列の値が不正な場合は、本来の出撃位置の座標が適用される
 
 出撃位置の変更を解除したい場合は、下記のように記述する(引数に[])
-NewDefaultSortiePosArray.setPosArray([]);
+NewDefaultSortiePos.setPosArray([]);
 
 
 ■使用上の注意点
-・関数 NewDefaultSortiePosArray.setPosArray(arr)は、
+・関数 NewDefaultSortiePos.setPosArray(arr)は、
 マップのオープニングイベントまたはコミュニケーションイベント内でのみ実行可能です
 
 ・マップクリア時（MapVictoryFlowEntryに入った時）に出撃位置の変更を記録したグローバルパラメータは削除する仕様になっていますが、
@@ -52,11 +52,11 @@ NewDefaultSortiePosArray.setPosArray([]);
 対策：
 シーンの変更(戦闘結果は問題なし)を使ってマップクリアを経ないでマップを離れる場合、
 シーンの変更を行う前にイベントコマンド〈スクリプトの実行〉・コード実行で下記のコードを実行してください
-NewDefaultSortiePosArray._deleteGlobal();
+NewDefaultSortiePos._deleteGlobal();
 
 ・他のプラグインによってMapVictoryFlowEntryを介さずにシーン変更でマップを離れる場合、
 該当プラグイン内でシーン変更する処理の前に下記コードを追加してください
-NewDefaultSortiePosArray._deleteGlobal();
+NewDefaultSortiePos._deleteGlobal();
 
 ■作成者
 ran
@@ -66,7 +66,7 @@ ran
 
 */
 
-var NewDefaultSortiePosArray = {
+var NewDefaultSortiePos = {
 	setPosArray: function(arr) {
 		var mapInfo = root.getCurrentSession().getCurrentMapInfo();
 		if (mapInfo === null) return;
