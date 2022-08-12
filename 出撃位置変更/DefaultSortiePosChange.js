@@ -42,7 +42,7 @@ NewDefaultSortiePos.setPosArray([]);
 ・関数 NewDefaultSortiePos.setPosArray(arr)は、
 マップのオープニングイベントまたはコミュニケーションイベント内でのみ実行可能です
 
-・マップクリア時（MapVictoryFlowEntryに入った時）に出撃位置の変更を記録したグローバルパラメータは削除する仕様になっていますが、
+・マップクリア時（BattleResultSceneに入った時）に出撃位置の変更を記録したグローバルパラメータは削除する仕様になっていますが、
 シーンの変更を通じてマップを離れた場合、グローバルパラメータが削除されない恐れもあり得ます
 
 ※想定される状況例：
@@ -54,7 +54,7 @@ NewDefaultSortiePos.setPosArray([]);
 シーンの変更を行う前にイベントコマンド〈スクリプトの実行〉・コード実行で下記のコードを実行してください
 NewDefaultSortiePos._deleteGlobal();
 
-・他のプラグインによってMapVictoryFlowEntryを介さずにシーン変更でマップを離れる場合、
+・他のプラグインによってBattleResultSceneを介さずにシーン変更でマップを離れる場合、
 該当プラグイン内でシーン変更する処理の前に下記コードを追加してください
 NewDefaultSortiePos._deleteGlobal();
 
@@ -94,19 +94,19 @@ cur_map = root.getCurrentSession().getCurrentMapInfo();
 新しいマップに入る際にSceneManager.resetCurrentMap();でリセットされる
 */
 
-var _MapVictoryFlowEntry_enterFlowEntry = MapVictoryFlowEntry.enterFlowEntry;
-MapVictoryFlowEntry.enterFlowEntry = function(battleResultScene) {
-	_MapVictoryFlowEntry_enterFlowEntry.call(this, battleResultScene);
-	
-	// マップクリア時に出撃位置変更用のグローバルパラメータを削除しておく
-	// グローバルパラメータの配列を残していると別のマップの出撃位置が変更されてしまう
+// マップクリア時に出撃位置変更用のグローバルパラメータを削除しておく
+// グローバルパラメータの配列を残していると別のマップの出撃位置が変更されてしまう
+var _BattleResultScene_setSceneData = BattleResultScene.setSceneData;
+BattleResultScene.setSceneData = function() {
 	delete root.getMetaSession().global.sortiePosArr;
+	
+	_BattleResultScene_setSceneData.call(this);
 };
+
 
 // グローバルパラメータで指定した出撃位置の変更後座標(配列)を取得する
 SortieSetting._getNewDefaultSortiePosArray = function(i) {
-	var global = root.getMetaSession().global;
-	var sortiePosArr = global.sortiePosArr;
+	var sortiePosArr = root.getMetaSession().global.sortiePosArr;
 	var x, y, width, hight;
 	
 	if (cur_map === null) {
