@@ -26,6 +26,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2022/04/22 新規作成
+2022/08/13 FixedMaxSotieCount.js(最大出撃数を調整するプラグイン)に対応
 
 */
 
@@ -60,6 +61,9 @@ BattleSetupScene.getRequiredSotieCount = function() {
 	
 	var requiredSotieCount = mapInfo.custom.requiredSotieCount;
 	var maxCount = SceneManager.getActiveScene().getSortieSetting().getSortieArray().length;
+	
+	// FixedMaxSotieCount.jsを導入している場合は、以下の一行のコメントアウトを解除してください
+//	maxCount = SceneManager.getActiveScene().getSortieSetting()._getSortieFixedMaxCount(maxCount);
 
 	if (typeof requiredSotieCount === 'number' && requiredSotieCount > 1) {
 		if (requiredSotieCount > maxCount) {
