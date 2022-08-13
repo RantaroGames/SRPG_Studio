@@ -59,13 +59,15 @@ BattleSetupScene.getRequiredSotieCount = function() {
 	if (mapInfo === null) return 0;
 	
 	var requiredSotieCount = mapInfo.custom.requiredSotieCount;
+	var maxCount = SceneManager.getActiveScene().getSortieSetting().getSortieArray().length;
+
 	if (typeof requiredSotieCount === 'number' && requiredSotieCount > 1) {
-		if (requiredSotieCount > SortieSetting.getDefaultSortieMaxCount()) {
-			requiredSotieCount = SortieSetting.getDefaultSortieMaxCount();
+		if (requiredSotieCount > maxCount) {
+			requiredSotieCount = maxCount;
 		}
-			
 		return requiredSotieCount;
 	}
+	
 	return 0;
 };
 
