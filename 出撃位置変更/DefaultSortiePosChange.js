@@ -63,6 +63,7 @@ ran
 
 ■更新履歴
 2022/08/11 新規作成
+2022/08/14 配列の重複を削除するようにした
 
 */
 
@@ -76,7 +77,8 @@ var NewDefaultSortiePos = {
 			return;
 		}
 		
-		root.getMetaSession().global.sortiePosArr = arr;
+		// 重複を削除してカスタムパラメータに保存する
+		root.getMetaSession().global.sortiePosArr = this._correctSortiePosArr(arr);
 		
 		// 変更した出撃位置に合わせてユニットの座標も変更する(ユニットの非表示状態は解除する)
 		SceneManager.getActiveScene().getSortieSetting().startSortieSetting(false);
@@ -84,8 +86,47 @@ var NewDefaultSortiePos = {
 	
 	_deleteGlobal: function() {
 		delete root.getMetaSession().global.sortiePosArr;
-	}	
+	},
+	
+	_correctSortiePosArr: function(sortiePosArr) {
+		var mapIndexArray = [];
+		var i, new_array;
+		var result = [];
+		
+		// 二次元配列の重複を判定する方法が難しかったのでマップindexの配列に変換してから重複を判定している
+		for (i = 0; i < sortiePosArr.length; i++) {
+			mapIndexArray.push(CurrentMap.getIndex(sortiePosArr[i][0], sortiePosArr[i][1]));
+		}
+		root.log('mapIndexArray ' + mapIndexArray);
+		
+		// 重複を取り除いておく
+		function f_unique(array)
+		{
+			var storage = {};
+			var uniqueArray = [];
+			var i,value;
+			
+			for (i = 0; i < array.length; i++) {
+				value = array[i];
+				if (!(value in storage)) {
+					storage[value] = true;
+					uniqueArray.push(value);
+				}
+			}
+			return uniqueArray;
+		}
+		
+		new_array = f_unique(mapIndexArray);
+		root.log('new_array ' + new_array);
+		
+		for (i = 0; i < new_array.length; i++) {
+			result.push([CurrentMap.getX(new_array[i]), CurrentMap.getY(new_array[i])]); 
+		}
+		
+		return result;
+	}
 };
+
 
 (function() {
 
@@ -103,6 +144,58 @@ BattleResultScene.setSceneData = function() {
 	_BattleResultScene_setSceneData.call(this);
 };
 
+/* var _MapVictoryFlowEntry_enterFlowEntry = MapVictoryFlowEntry.enterFlowEntry;
+MapVictoryFlowEntry.enterFlowEntry = function(battleResultScene) {
+	_MapVictoryFlowEntry_enterFlowEntry.call(this, battleResultScene);
+	delete root.getMetaSession().global.sortiePosArr;
+}; */
+
+// エディタで設定した出撃位置と重複するカスタムパラメータの指定は無視する
+function f_correctArray(x, y, defaultsortiePosArray)
+{
+	var i, sortiePos;
+	var count = defaultsortiePosArray.length;
+	
+	for (i = 0; i < count; i++) {
+		sortiePos = defaultsortiePosArray[i];
+		if (typeof sortiePos !== 'undefined') {
+			if (sortiePos.x === x && sortiePos.y === y) {
+				//root.log('重複' + i + ' x:' + sortiePos.x + ' y:' + sortiePos.y);
+				return false;
+			}
+		}
+	}
+	
+	return true;
+}
+
+// 重複を判定するためにエディタで設定した出撃位置の配列を変数に保存しておく
+SortieSetting._defaultSortiePosArray = null;
+SortieSetting._createDefaultSortiePosArray = function() {
+	var i, sortiePos;
+	var mapInfo = root.getCurrentSession().getCurrentMapInfo();
+	var count = mapInfo.getSortieMaxCount();
+	var defaultSortiePosArray = [];
+	
+	for (i = 0; i < count; i++) {
+		sortiePos = StructureBuilder.buildSortiePos();
+		sortiePos.x = mapInfo.getSortiePosX(i);
+		if (sortiePos.x === -1) {
+			// 本来の出撃数を超える変更がされている場合は、処理を続行しない
+			break;
+		}
+		sortiePos.y = mapInfo.getSortiePosY(i);
+		defaultSortiePosArray.push(sortiePos);
+	}
+	return defaultSortiePosArray;
+};
+
+var _SortieSetting_startSortieSetting = SortieSetting.startSortieSetting;
+SortieSetting.startSortieSetting = function(isInvisible) {
+	this._defaultSortiePosArray = this._createDefaultSortiePosArray();
+	
+	_SortieSetting_startSortieSetting.call(this, isInvisible);
+};
 
 // グローバルパラメータで指定した出撃位置の変更後座標(配列)を取得する
 SortieSetting._getNewDefaultSortiePosArray = function(i) {
@@ -117,8 +210,8 @@ SortieSetting._getNewDefaultSortiePosArray = function(i) {
 		//root.log('sortiePosArr が配列ではない');
 		return false;
 	}
- 	
- 	if (sortiePosArr.length <= i) {
+	
+	if (sortiePosArr.length <= i) {
 		//root.log('sortiePosArrの要素数 ' + sortiePosArr.length + '<= 出撃位置数 '　+ i);
 		return false;
 	}
@@ -146,6 +239,11 @@ SortieSetting._getNewDefaultSortiePosArray = function(i) {
 		//root.log('sortiePosArr[' + i + ']　ｙ座標が不正');
 		return false;
 	}
+	
+	if (f_correctArray(x, y, this._defaultSortiePosArray) === false) {
+		root.log('重複エディタ ' + i + ':' + x + ', ' + y);
+		return false;
+	}
 
 	return [x, y];
 };
@@ -155,7 +253,8 @@ SortieSetting._getDefaultSortiePosX = function(i) {
 	var newPosArr = this._getNewDefaultSortiePosArray(i);
 	
 	if (newPosArr === false) {
-		return cur_map.getSortiePosX(i);
+//		return cur_map.getSortiePosX(i);
+		return _SortieSetting__getDefaultSortiePosX.call(this, i);
 	}
 	else {
 		//root.log(i + ' x ' + newPosArr[0]);
@@ -168,7 +267,8 @@ SortieSetting._getDefaultSortiePosY = function(i) {
 	var newPosArr = this._getNewDefaultSortiePosArray(i);
 	
 	if (newPosArr === false) {
-		return cur_map.getSortiePosY(i);
+//		return cur_map.getSortiePosY(i);
+		return _SortieSetting__getDefaultSortiePosY.call(this, i);
 	}
 	else {
 		//root.log(i + ' y ' + newPosArr[1]);
