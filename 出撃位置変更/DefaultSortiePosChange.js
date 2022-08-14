@@ -144,12 +144,6 @@ BattleResultScene.setSceneData = function() {
 	_BattleResultScene_setSceneData.call(this);
 };
 
-/* var _MapVictoryFlowEntry_enterFlowEntry = MapVictoryFlowEntry.enterFlowEntry;
-MapVictoryFlowEntry.enterFlowEntry = function(battleResultScene) {
-	_MapVictoryFlowEntry_enterFlowEntry.call(this, battleResultScene);
-	delete root.getMetaSession().global.sortiePosArr;
-}; */
-
 // エディタで設定した出撃位置と重複するカスタムパラメータの指定は無視する
 function f_correctArray(x, y, defaultsortiePosArray)
 {
