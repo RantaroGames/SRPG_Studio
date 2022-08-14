@@ -12,7 +12,7 @@ mapに最低出撃人数を設定します
 2.mapのカスタムパラメータに最低出撃数を設定する
 
 {
-  requiredSotieCount: 2以上の整数値(※)
+  requiredSortieCount: 2以上の整数値(※)
 }
 
 (※)元の処理において最低でも1体はユニットを出撃選択していないとマップは開始できない
@@ -27,6 +27,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 ■更新履歴
 2022/04/22 新規作成
 2022/08/13 FixedMaxSotieCount.js(最大出撃数を調整するプラグイン)に対応
+2022/08/14 スペルミスを修正
 
 */
 
@@ -40,7 +41,7 @@ BattleSetupScene.endBattleSetup = function() {
 
 	if (!this._isSetupFinal) return;
 	
-	var count = this.getRequiredSotieCount();
+	var count = this.getRequiredSortieCount();
 	if (count === 0) return;
 
 	if (PlayerList.getSortieList().getCount() > count - 1) {
@@ -52,24 +53,24 @@ BattleSetupScene.endBattleSetup = function() {
 };
 
 // mapのカスタムパラメータに必要出撃人数を設定しておく
-BattleSetupScene.getRequiredSotieCount = function() {
+BattleSetupScene.getRequiredSortieCount = function() {
 	var session = root.getCurrentSession();
 	if (session === null) return 0;
 	
 	var mapInfo = session.getCurrentMapInfo();
 	if (mapInfo === null) return 0;
 	
-	var requiredSotieCount = mapInfo.custom.requiredSotieCount;
+	var requiredSortieCount = mapInfo.custom.requiredSortieCount;
 	var maxCount = SceneManager.getActiveScene().getSortieSetting().getSortieArray().length;
 	
 	// FixedMaxSotieCount.jsを導入している場合は、以下の一行のコメントアウトを解除してください
 //	maxCount = SceneManager.getActiveScene().getSortieSetting()._getSortieFixedMaxCount(maxCount);
 
-	if (typeof requiredSotieCount === 'number' && requiredSotieCount > 1) {
-		if (requiredSotieCount > maxCount) {
-			requiredSotieCount = maxCount;
+	if (typeof requiredSortieCount === 'number' && requiredSortieCount > 1) {
+		if (requiredSortieCount > maxCount) {
+			requiredSortieCount = maxCount;
 		}
-		return requiredSotieCount;
+		return requiredSortieCount;
 	}
 	
 	return 0;
@@ -100,16 +101,16 @@ UnitSortieScreen._drawSortieText = function(textui) {
 	this._drawMemberData(x + dx + textWidth + space, y, textui);
 	
 	// 文字列の配置が気になる場合は、下の値(40)を変更してください
-	this._drawRequiredSotieCount(x + dx + textWidth + space + 40, y, textui);
+	this._drawRequiredSortieCount(x + dx + textWidth + space + 40, y, textui);
 };
 
 // 最低出撃数を表示する処理
-UnitSortieScreen._drawRequiredSotieCount = function(x, y, textui) {
+UnitSortieScreen._drawRequiredSortieCount = function(x, y, textui) {
 	var text = '必要出撃数 ';
 	var color = textui.getColor();
 	var font = textui.getFont();
 	var dx = DefineControl.getNumberSpace();
-	var count = BattleSetupScene.getRequiredSotieCount();
+	var count = BattleSetupScene.getRequiredSortieCount();
 	if (count < 1) count = 1;
 	
 	x += dx * 2;
