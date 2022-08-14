@@ -16,7 +16,7 @@ mapの最大出撃数をエディタで設定した数値以下に制限しま�
 2.mapのカスタムパラメータに最大出撃許可数を設定する
 
 {
-  fixedSotieMaxCount: 1以上の整数値(※)
+  fixedSortieMaxCount: 1以上の整数値(※)
 }
 
 ※mapの最大出撃数を超える値を設定した場合は、最大出撃数を採用する
@@ -45,7 +45,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 function f_SortieFixedMaxCount(maxCount)
 {
 	var mapInfo = root.getCurrentSession().getCurrentMapInfo();
-	var fixedMaxCount = mapInfo.custom.fixedSotieMaxCount;
+	var fixedMaxCount = mapInfo.custom.fixedSortieMaxCount;
 	
 	if (typeof fixedMaxCount === 'number' &&
 		fixedMaxCount > 0 &&
