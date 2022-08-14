@@ -97,7 +97,7 @@ var NewDefaultSortiePos = {
 		for (i = 0; i < sortiePosArr.length; i++) {
 			mapIndexArray.push(CurrentMap.getIndex(sortiePosArr[i][0], sortiePosArr[i][1]));
 		}
-		root.log('mapIndexArray ' + mapIndexArray);
+		//root.log('mapIndexArray ' + mapIndexArray);
 		
 		// 重複を取り除いておく
 		function f_unique(array)
@@ -117,7 +117,7 @@ var NewDefaultSortiePos = {
 		}
 		
 		new_array = f_unique(mapIndexArray);
-		root.log('new_array ' + new_array);
+		//root.log('new_array ' + new_array);
 		
 		for (i = 0; i < new_array.length; i++) {
 			result.push([CurrentMap.getX(new_array[i]), CurrentMap.getY(new_array[i])]); 
@@ -241,7 +241,7 @@ SortieSetting._getNewDefaultSortiePosArray = function(i) {
 	}
 	
 	if (f_correctArray(x, y, this._defaultSortiePosArray) === false) {
-		root.log('重複エディタ ' + i + ':' + x + ', ' + y);
+		//root.log('重複エディタ ' + i + ':' + x + ', ' + y);
 		return false;
 	}
 
