@@ -37,6 +37,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2022/08/13 新規作成
+2022/08/13 カスタムパラメータのスペルミスを修正
 
 */
 (function() {
