@@ -22,6 +22,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2022/04/10 プラグインの説明文を追記
+2022/09/04 オープニングイベント終了時に実行可能な場所イベントを取得して保存するようにした
 
 */
 
@@ -124,6 +125,14 @@ function f_checkSceneType()
 		MapLayer._setPlaceEventList();
 		
 		return _EnemyTurn__moveEndEnemyTurn.call(this);
+	};
+	
+	// オープニングイベント終了時に実行可能な場所イベントを保存する
+	var _OpeningEventFlowEntry__doLastAction = OpeningEventFlowEntry._doLastAction;
+	OpeningEventFlowEntry._doLastAction = function() {
+		MapLayer._setPlaceEventList();
+		
+		_OpeningEventFlowEntry__doLastAction.call(this);
 	};
 	
 	var alias_drawMapLayer = MapLayer.drawMapLayer;
