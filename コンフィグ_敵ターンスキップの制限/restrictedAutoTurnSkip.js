@@ -65,10 +65,6 @@ Miscellaneous.isGameAcceleration = function() {
 };
 
 // [敵ターンスキップ]のコンフィグ設定で「瞬時」の項目を削除する
-ConfigItem.AutoTurnSkip.selectFlag = function(index) {
-	root.getMetaSession().setDefaultEnvironmentValue(4, index);
-};
-
 // ターンスキップのフラグが1より大きい場合は1として返す
 // 本来であれば、フラグの初期値は2(「敵ターンスキップ：なし」に設定されている)
 ConfigItem.AutoTurnSkip.getFlagValue = function() {
