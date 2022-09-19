@@ -26,7 +26,6 @@ restrictedAutoTurnSkip.js
 　このファイルをpluginフォルダに入れる
 
 
-
 ■作成者
 ran
 
