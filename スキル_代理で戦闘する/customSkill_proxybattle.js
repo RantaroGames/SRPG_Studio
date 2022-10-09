@@ -40,7 +40,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 var CUSTOMSKILL_KEYWORD = 'proxybattler';
 
 // o-to氏作のOT_ExtraConfigSkillプラグインと併用したい場合はtrue
-var OT_ExtraConfigSkill_COMPATIBLE = true;
+var OT_ExtraConfigSkill_COMPATIBLE = false;
 
 
 // カスタムスキルの発動チェック
