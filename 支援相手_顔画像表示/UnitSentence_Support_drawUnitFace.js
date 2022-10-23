@@ -43,6 +43,8 @@ var NamePosX = 20;
 // 顔画像のサイズをICONサイズ(24)より大きくした場合、行の高さを変更しないと画像が重なって表示されます
 var UnitSentenceSpaceY = 25; //this._unitSentenceWindow.getUnitSentenceSpaceY();
 
+// センテンスウィンドウの幅を広げたい場合
+var WidthExtension = 0;
 //------------------------------------------
 
 // 支援相手を表示するオブジェクト(オーバーライド)
@@ -95,5 +97,11 @@ function func_drawShrinkFace(xDest, yDest, handle, destWidth, destHeight)
 	//　(描画先x, y, 拡大/縮小した幅, 高さ, 描画元のx座標(リソース上のx座標×画像タイプの幅), y座標, 描画元の幅, 高さ)
 	pic.drawStretchParts(xDest, yDest, destWidth, destHeight, xSrc, ySrc, srcWidth, srcHeight);
 }
+
+// センテンスウィドウの幅を補正する
+var _UnitSentenceWindow_getWindowWidth = UnitSentenceWindow.getWindowWidth;
+UnitSentenceWindow.getWindowWidth = function() {
+	return _UnitSentenceWindow_getWindowWidth.call(this) + WidthExtension;
+};
 
 })();
