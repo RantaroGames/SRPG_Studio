@@ -29,9 +29,8 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 // 設定項目
 //------------------------------------------
 
-// 表示する顔画像のサイズ(幅, 高さ)
-var FaceImageWidth = 24;
-var FaceImageHeight = 24;
+// 表示する顔画像のサイズ(幅,高さは同じ値と規定する)
+var FaceImageSize = 24;
 
 // 顔画像の描画開始位置のx座標補正値
 var ImagePosX = 12;
@@ -65,7 +64,7 @@ UnitSentence.Support.drawUnitSentence = function(x, y, unit, weapon, totalStatus
 		targetUnit = data.getUnit();
 		if (targetUnit !== null && data.isGlobalSwitchOn() && data.isVariableOn()) {
 			// 顔画像を縮小表示する処理
-			func_drawShrinkFace(x - ImagePosX, y, targetUnit.getFaceResourceHandle(), FaceImageWidth, FaceImageHeight);
+			func_drawShrinkFace(x - ImagePosX, y, targetUnit.getFaceResourceHandle(), FaceImageSize, FaceImageSize);
 			
 			// 支援相手の名前を表示する処理
 			TextRenderer.drawKeywordText(x + NamePosX, y, targetUnit.getName(), length, color, font);
