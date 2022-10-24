@@ -32,10 +32,10 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 // 表示する顔画像のサイズ(幅,高さは同じ値と規定する)
 var FaceImageSize = 24;
 
-// 顔画像の描画開始位置のx座標補正値
+// 顔画像の描画開始位置のx座標補正(値を大きくすると左へ移動)
 var ImagePosX = 12;
 
-// 支援相手の名前表示開始x座標補正
+// 支援相手の名前表示開始x座標補正(値を大きくすると右へ移動)
 var NamePosX = 20;
 	
 // 一行当たりの表示域の高さ(規定値は25)
