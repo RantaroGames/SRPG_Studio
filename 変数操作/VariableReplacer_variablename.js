@@ -58,7 +58,7 @@ DataVariable.VaName = defineObject(BaseDataVariable,
 		var table = root.getMetaSession().getVariableTable(page - 1);
 		var index = table.getVariableIndexFromId(id);
 		
-		return table.getVariableName(index)
+		return table.getVariableName(index);
 	},
 	
 	getIndexFromKey: function(text) {
