@@ -167,6 +167,9 @@ var ConfigureCommandSetting = {
 	, RestCommand: false
 	 // 拠点コマンドリストの下からn番目に追加する
 	, RestCommandIndex: 5
+	
+	// エクストラの項目に追加する
+	, ExtraCommand: true
 };
 
 //-----------------------------------------------
@@ -629,11 +632,16 @@ ExtraScreen._configureExtraScreens = function(groupArray) {
 	groupArray.appendObject(AchievementsScreen);
 };
 
-// エクストラでキャラクター解説などの項目が全く設定されていなくてもコマンドを出現させる
+// エクストラに実績リストの項目を出現させる
 var _ExtraControl_isExtraDisplayable = ExtraControl.isExtraDisplayable;
 ExtraControl.isExtraDisplayable = function() {
-//	var result = _ExtraControl_isExtraDisplayable.call(this);
-	return true;
+	var result = _ExtraControl_isExtraDisplayable.call(this);
+
+	if (ConfigureCommandSetting.ExtraCommand) {
+		return true;
+	}
+	
+	return result;
 };
 
 
