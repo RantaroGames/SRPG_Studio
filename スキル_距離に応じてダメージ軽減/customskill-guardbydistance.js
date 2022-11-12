@@ -67,7 +67,6 @@ guardParam:{
 
 組み込みpolyfill
 Array.isArray()
-Array.prototype.filter()
 Array.prototype.forEach()
 Array.prototype.some()
 Array.prototype.reduce()
@@ -80,6 +79,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2022/03/29 新規作成
+2022/11/12 武器のカテゴリーとタイプを調べてスキル発動の許可を判定する方法の見直し。および不要な変数を削除
 
 */
 
@@ -128,9 +128,6 @@ AttackEvaluator.ActiveAction._arrangePassiveDamage = function(virtualActive, vir
 		skill = arr[i].skill;
 		if (skill === null) continue;
 		
-		// 彼我の距離を算定
-		distance = Math.abs(active.getMapX() - passive.getMapX()) + Math.abs(active.getMapY() - passive.getMapY());
-				
 		guardParam = skill.custom.guardParam;
 		if (typeof guardParam !== 'undefined') {
 			if (typeof guardParam.baseValue === 'number') {
@@ -145,59 +142,60 @@ AttackEvaluator.ActiveAction._arrangePassiveDamage = function(virtualActive, vir
 			}
 		}
 		
+		// 攻撃者の武器がスキル発動許可対象ではない
+		if (!f_isWeaponTypeAllowed(refList, weaponType)) {
+			continue;
+		}
+		
+		// スキルの発動率が成立しなかった
+		if (!SkillRandomizer.isCustomSkillInvoked(passive, active, skill, CustomSkillKeyword)) {
+			continue;
+		}
+		
+		// 彼我の距離を算定
+		distance = Math.abs(active.getMapX() - passive.getMapX()) + Math.abs(active.getMapY() - passive.getMapY());
+		
 		// ダメージ軽減率を算出する
 		curvalue = baseValue + distance * magnification;
 //		root.log(passive.getName() + ' skill:' + skill.getName() + '　dmg軽減率: ' + curvalue);
 		
-		// 軽減率が1未満なら発動チェックをしない
+		// 軽減率が1未満
 		if (curvalue < 1) continue;
 		
 		// 特定のカテゴリの、特定の武器タイプIDであるか調べる
 		function f_isWeaponTypeAllowed(refList, weaponType)
 		{
+			var i, index, weaponTypeIdArray;
+			
 			// 対象武器を設定したカスタムパラメータが配列ではない場合は発動を許可
 			if (!Array.isArray(refList) || refList.length === 0) return true;
 			
-			var result = false;
-			var isCategoryMatched, weaponTypeIdArray;
-			
-			// 対象武器とカテゴリーが一致していればカスタムパラメータに設定されたオブジェクトを返す
-			// find()が良いのだろうけど、ポリフィルを導入しても上手く行かなかったのでfilter()を使用
-			isCategoryMatched = refList.filter(
-				function(obj)
-				{
-					return obj.categoryType === weaponType.getWeaponCategoryType();
+			// 対象武器とカテゴリーが一致していればカスタムパラメータに設定されたオブジェクトのindexを返す
+			index = -1;
+			for (i = 0; i < refList.length; i++) {
+				if (refList[i].categoryType === weaponType.getWeaponCategoryType()) {
+					index = i; break;
 				}
-			);
-			
-//			root.log('length'  + isCategoryMatched.length);
-			// カスタムパラメータの設定で同一カテゴリーを複数指定することは、そもそも設定ミスなので要素数は1が望ましい
-			if (isCategoryMatched.length !== 0) {
-				weaponTypeIdArray = isCategoryMatched[0].weaponTypeId;
+			}
+
+			if (index !== -1) {
+				weaponTypeIdArray = refList[index].weaponTypeId;
 				
 				// 武器タイプのidが配列ではない/要素数0の場合、カテゴリーが一致していればスキル発動
 				if (!Array.isArray(weaponTypeIdArray) || weaponTypeIdArray.length === 0) {
 					return true;
-				}		
+				}
 				
-				return weaponTypeIdArray.some(
-						function(weaponId)
-						{
-							return weaponId === weaponType.getId();
-						}
-				);
+				for (i = 0; i < weaponTypeIdArray.length; i++) {
+					if (weaponTypeIdArray[i] === weaponType.getId()) {
+						return true;
+					}
+				}
+				
+				return false;
 			}
-			
-			return result;
-		}
-	
-		// 攻撃者の武器がスキル発動許可対象ではない
-		if (!f_isWeaponTypeAllowed(refList, weaponType)) {
-			continue;
-		}
-		// スキルの発動率が成立しなかった
-		if (!SkillRandomizer.isCustomSkillInvoked(passive, active, skill, CustomSkillKeyword)) {
-			continue;
+				
+			return false;
 		}
 		
 		// 軽減率が最大のスキルを保存する
@@ -270,8 +268,6 @@ SkillInfoWindow.drawWindowContent = function(x, y) {
 	
 		if (refList !== null) {
 			if (refList.length !== 0) {
-				var isCategoryMatched, weaponTypeIdArray;
-			
 				refList.forEach(
 					function(obj)
 					{
@@ -420,45 +416,6 @@ if (!Array.prototype.some)
   };
 }
 
-
-if (!Array.prototype.filter){
-  Array.prototype.filter = function(func, thisArg) {
-    'use strict';
-    if ( ! ((typeof func === 'Function' || typeof func === 'function') && this) )
-        throw new TypeError();
-
-    var len = this.length >>> 0,
-        res = new Array(len), // preallocate array
-        t = this, c = 0, i = -1;
-
-    var kValue;
-    if (thisArg === undefined){
-      while (++i !== len){
-        // checks to see if the key was set
-        if (i in this){
-          kValue = t[i]; // in case t is changed in callback
-          if (func(t[i], i, t)){
-            res[c++] = kValue;
-          }
-        }
-      }
-    }
-    else{
-      while (++i !== len){
-        // checks to see if the key was set
-        if (i in this){
-          kValue = t[i];
-          if (func.call(thisArg, t[i], i, t)){
-            res[c++] = kValue;
-          }
-        }
-      }
-    }
-
-    res.length = c; // shrink down array to proper size
-    return res;
-  };
-}
 
 // Production steps of ECMA-262, Edition 5, 15.4.4.18
 // Reference: http://es5.github.com/#x15.4.4.18
