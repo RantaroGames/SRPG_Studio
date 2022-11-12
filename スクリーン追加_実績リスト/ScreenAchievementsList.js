@@ -21,6 +21,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2022/11/06 新規作成
+2022/11/12 リストの列、行の調整について説明を追記
 
 
 //-----------------------------------------------
@@ -30,7 +31,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
     ※オプションダイアログで、「コンフィグでオリジナルデータを表示する」にチェックをしている場合に表示されます。ユーザー・マニュアル＞データ設定＞オリジナルデータの項目を参照してください。
 	 
 	 オリジナルデータのタブ1を使用します。(※)
-	 (※)変更したい場合は下記コードの値を書き換えます(730行付近)
+	 (※)変更したい場合は下記コードの値を書き換えます(745行付近)
 	 
 	 変数　OriginalDataListIndex = 0;
 	 代入する数値はタブの数値-1 (左端のタブから0,1,2...)
@@ -48,7 +49,8 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 　　2．細かな設定
      下記コード内の設定項目を変更することで実績リスト画面の名前などを変更することもできます。
-
+     ゲーム画面からリストの項目が見切れる場合、ScrollbarSetting.ColとScrollbarSetting.Rowの値を調整してください(154行付近)
+	 
 //-----------------------------------------------
 // 実績の解放状態の操作方法
 //-----------------------------------------------
@@ -151,8 +153,8 @@ var AchievementsListSetting = {
 // マップの広さ(GameAreaの広さ)に応じて適宜変更してください
 // 仮にゲームの画面解像度が1024*768だったとしてもマップが20*15だった場合、スクリーンは640*480の範囲に描画されます(※マップチップ規格32*32)
 var ScrollbarSetting = {
-	  Col: 3
-	, Row: 9
+	  Col: 2
+	, Row: 8
 };
 
 // コマンドリストに実績リスト画面を追加するか否か
@@ -283,7 +285,10 @@ var AchievementsScreen = defineObject(BaseScreen,
 	},
 	
 	_completeScreenMemberData: function(screenParam) {
-		this._itemWindow.getItemScrollbar().setScrollFormation(ScrollbarSetting.Col, ScrollbarSetting.Row);	
+		var col = ScrollbarSetting.Col > 0 ? ScrollbarSetting.Col : 1;
+		var row = ScrollbarSetting.Row > 0 ? ScrollbarSetting.Row : 1;
+		
+		this._itemWindow.getItemScrollbar().setScrollFormation(col, row);	
 		this._itemWindow.enableSelectCursor(true);
 		
 		this._setAchievmentItems();
