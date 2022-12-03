@@ -17,7 +17,7 @@ ItemControl.lostItem = function(unit, item) {
 		breakedItemId = item.custom.breakedItemId;
 	}
 	
-	if (breakedItemId >= 0) {
+	if (weaponType.getBreakedWeapon() === null && breakedItemId >= 0) {
 		if (root.getBaseData().getItemList().getDataFromId(breakedItemId) !== null) {
 			item.setLimit(WeaponLimitValue.BROKEN);
 			return;
