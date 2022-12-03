@@ -4,20 +4,21 @@
 {
   breakedItemId: id
 }
+
+破損時のアイテムは必ず設定してください。そうしないと元アイテムの耐久が無限になってしまいます。
 */
 
 (function() {
 
 var _ItemControl_lostItem = ItemControl.lostItem;
 ItemControl.lostItem = function(unit, item) {
-	var weaponType = item.getWeaponType();
 	var breakedItemId = -1;
 
 	if (typeof item.custom.breakedItemId === 'number') {
 		breakedItemId = item.custom.breakedItemId;
 	}
 	
-	if (weaponType.getBreakedWeapon() === null && breakedItemId >= 0) {
+	if (breakedItemId >= 0) {
 		if (root.getBaseData().getItemList().getDataFromId(breakedItemId) !== null) {
 			item.setLimit(WeaponLimitValue.BROKEN);
 			return;
@@ -28,4 +29,3 @@ ItemControl.lostItem = function(unit, item) {
 };
 
 })();
-
