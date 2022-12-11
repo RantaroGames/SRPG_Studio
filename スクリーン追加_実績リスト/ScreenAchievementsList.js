@@ -22,6 +22,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 ■更新履歴
 2022/11/06 新規作成
 2022/11/12 リストの列、行の調整について説明を追記
+2022/12/11 メンバ変数のスペルミスを修正　×_achievmentsList　〇_achievementsList
 
 
 //-----------------------------------------------
@@ -183,7 +184,7 @@ var AchievementsScreen = defineObject(BaseScreen,
 {
 	_itemWindow: null,
 
-	_achievmentsList: null,
+	_achievementsList: null,
 	_unlockedIdArray: null,
 	_achievementsCountWindow: null,
 	
@@ -248,7 +249,7 @@ var AchievementsScreen = defineObject(BaseScreen,
 	drawScreenBottomText: function(textui) {
 		var obj = this._itemWindow.getCurrentItem();
 		var index = this._itemWindow.getItemIndex();
-		var list = this._achievmentsList;
+		var list = this._achievementsList;
 		var text = '';
 
 		if (obj !== null) {
@@ -281,7 +282,7 @@ var AchievementsScreen = defineObject(BaseScreen,
 		this._unlockedIdArray = F_AchievementControl.getUnlockedIdArray();
 		
 		// [実績, 解放状態]を要素にもつ二次元配列
-		this._achievmentsList = this._checkUnlocked();
+		this._achievementsList = this._checkUnlocked();
 	},
 	
 	_completeScreenMemberData: function(screenParam) {
@@ -292,13 +293,13 @@ var AchievementsScreen = defineObject(BaseScreen,
 		this._itemWindow.enableSelectCursor(true);
 		
 		this._setAchievmentItems();
-		this._achievementsCountWindow.setCount(this._achievmentsList.length, this._unlockedIdArray.length);
+		this._achievementsCountWindow.setCount(this._achievementsList.length, this._unlockedIdArray.length);
 	},
 	
 	_setAchievmentItems: function() {
 		var i;
 		var scrollbar = this._itemWindow.getItemScrollbar();
-		var arr = this._achievmentsList;
+		var arr = this._achievementsList;
 		var count = arr.length;
 		var unlockedArray = [];
 
