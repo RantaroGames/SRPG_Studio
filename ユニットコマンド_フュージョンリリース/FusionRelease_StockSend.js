@@ -62,9 +62,8 @@ UnitCommand.FusionRelease._forceStockSend = function(unit, generator) {
 	var item, index, count;
 	var isSkipMode = false; //　ストックへ送るアイテムを表示しない場合はtrue
 	
-	// 子ユニットのカスタムパラメータでストック送りを許可しない( {forceStockSend: false} )
-	if (child.custom.forceStockSend === false) {
-//		root.log('強制ストック送りを許可していないユニット');
+	// 子とアイテム交換できない場合
+	if (this._isFusionTradable(unit, child) === false) {
 		return;
 	}
 	
@@ -86,6 +85,26 @@ UnitCommand.FusionRelease._forceStockSend = function(unit, generator) {
 	UnitItemControl.arrangeItem(child);	
 };
 
+
+UnitCommand.FusionRelease._isFusionTradable = function(unit, child) {
+	// フュージョンデータでアイテム交換を許可していない
+	if (!FusionControl.isItemTradable(unit)) return false;
+	
+	// 子が存在しない
+	if (child === null) return false;
+	
+	// 子が敵勢力ではない
+	if (child.getUnitType() !== UnitType.ENEMY) return false;
+	
+	// 子ユニットのカスタムパラメータでストック送りを許可しない( {forceStockSend: false} )
+	if (child.custom.forceStockSend === false) {
+//		root.log('強制ストック送りを許可していないユニット');
+		return false;
+	}
+	
+	return true;
+};
+	
 // ストック送りするアイテム(武器)を判定する
 UnitCommand.FusionRelease._checkSendableItem = function(item) {
 	if (item === null) return false;
