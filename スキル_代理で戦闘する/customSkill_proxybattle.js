@@ -249,7 +249,6 @@ AttackFlow._doAttackAction = function() {
 	var passive = order.getPassiveUnit();
 	var attackParam = this._parentCoreAttack._attackParam;
 	var fusionData = attackParam.fusionAttackData;
-	var hp;
 	
 	_AttackFlow__doAttackAction.call(this);
 	
