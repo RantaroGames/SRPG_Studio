@@ -246,11 +246,20 @@ CatchFusionFlowEntry._completeMemberData = function(preAttack) {
 	var active = preAttack.getActiveUnit();
 	var passive = preAttack.getPassiveUnit();
 	var attackParam = preAttack._attackParam;
+	var fusionData = FusionControl.getFusionAttackData(active);
+	
+	if (fusionData === null) {
+		return EnterResult.NOTENTER;
+	}
+	
+	if (!DamageControl.isSyncope(passive)) {
+		return EnterResult.NOTENTER;
+	}
 	
 	// 代理ユニットが捕獲される状況になった場合
 	if (attackParam.proxyBattler === passive) {
 		// 代理ユニットが捕獲できる条件に適合しない場合
-		if (FusionControl.isCatchable(active, passive, attackParam.fusionAttackData) === false) {
+		if (FusionControl.isCatchable(active, passive, fusionData) === false) {
 			// 撃破された代理ユニットに捕獲状態が設定されているのでfalseにする
 			passive.setSyncope(false);
 			
@@ -264,7 +273,6 @@ CatchFusionFlowEntry._completeMemberData = function(preAttack) {
 	
 	return _CatchFusionFlowEntry__completeMemberData.call(this, preAttack);
 };
-
 
 // o-to氏作のOT_ExtraConfigSkillプラグインと併用する場合にスキル発動時にEP消費するための処理
 // EC_SkillCheck._UseSkillExpendDataと同様の処理
