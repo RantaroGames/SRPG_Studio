@@ -265,7 +265,7 @@ AttackFlow._doAttackAction = function() {
 	if (FusionControl.isCatchable(active, passive, fusionData)) return;
 	
 	// 以下の処理では、捕獲できない代理ユニットが(元のターゲットを対象とした判定によって)捕獲されている状況を是正する
-	root.log('不正な捕獲: ' + attackParam.proxyBattler.getName());
+//	root.log('不正な捕獲: ' + attackParam.proxyBattler.getName());
 	
 	// 捕獲状態を解除する
 	passive.setSyncope(false);
