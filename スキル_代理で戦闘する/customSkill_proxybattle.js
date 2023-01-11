@@ -240,39 +240,44 @@ NormalAttackOrderBuilder._setInitialSkill = function(virtualActive, virtualPassi
 
 //-----------------------------------------------
 // 代理ユニットが捕獲できない対象だった場合に処理を変更する
+// DropFlowEntry._startTrophyCheckで捕獲されたユニットのドロップトロフィーが消去されてしまうので、この処理に入る前に捕獲状態を解除しておく
 //-----------------------------------------------
-var _CatchFusionFlowEntry__completeMemberData = CatchFusionFlowEntry._completeMemberData;
-CatchFusionFlowEntry._completeMemberData = function(preAttack) {
-	var active = preAttack.getActiveUnit();
-	var passive = preAttack.getPassiveUnit();
-	var attackParam = preAttack._attackParam;
-	var fusionData = FusionControl.getFusionAttackData(active);
+var _AttackFlow__doAttackAction = AttackFlow._doAttackAction;
+AttackFlow._doAttackAction = function() {
+	var order = this._order;
+	var active = order.getActiveUnit();
+	var passive = order.getPassiveUnit();
+	var attackParam = this._parentCoreAttack._attackParam;
+	var fusionData = attackParam.fusionAttackData;
+	var hp;
 	
-	if (fusionData === null) {
-		return EnterResult.NOTENTER;
+	_AttackFlow__doAttackAction.call(this);
+	
+	// フュージョン攻撃ではない
+	if (fusionData === null) return;
+	
+	// 代理戦闘が発生していない
+	if (attackParam.proxyBattler === null || typeof attackParam.proxyBattler === 'undefined' || attackParam.proxyBattler !== passive) return;
+	
+	// 元の処理で捕獲されていない
+	if (!DamageControl.isSyncope(passive)) return;
+	
+	// 代理ユニットが捕獲される条件を満たしてるかを改めて確認する
+	if (FusionControl.isCatchable(active, passive, fusionData)) return;
+	
+	// 以下の処理では、捕獲できない代理ユニットが(元のターゲットを対象とした判定によって)捕獲されている状況を是正する
+	root.log('不正な捕獲: ' + attackParam.proxyBattler.getName());
+	
+	// 捕獲状態を解除する
+	passive.setSyncope(false);
+	
+	// HPが0になっている場合は死亡(負傷)状態を設定する
+	// DamageControl.checkHp(active, passive)ではHPは1に補正されていない
+	if (passive.getHp() < 1) {
+		DamageControl.setDeathState(passive);
 	}
-	
-	if (!DamageControl.isSyncope(passive)) {
-		return EnterResult.NOTENTER;
-	}
-	
-	// 代理ユニットが捕獲される状況になった場合
-	if (attackParam.proxyBattler === passive) {
-		// 代理ユニットが捕獲できる条件に適合しない場合
-		if (FusionControl.isCatchable(active, passive, fusionData) === false) {
-			// 撃破された代理ユニットに捕獲状態が設定されているのでfalseにする
-			passive.setSyncope(false);
-			
-			// HPが0になっていた場合は死亡(負傷)状態を設定する
-			if (passive.getHp() < 1) {
-				DamageControl.setDeathState(passive);
-			}
-			return EnterResult.NOTENTER;
-		}
-	}
-	
-	return _CatchFusionFlowEntry__completeMemberData.call(this, preAttack);
 };
+
 
 // o-to氏作のOT_ExtraConfigSkillプラグインと併用する場合にスキル発動時にEP消費するための処理
 // EC_SkillCheck._UseSkillExpendDataと同様の処理
