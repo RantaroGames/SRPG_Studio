@@ -31,6 +31,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 ■更新履歴
 2021/12/07 新規作成
 2021/12/20 強制戦闘ではスキル発動を許可しない方式に変更
+2023/01/11　戦闘後に捕獲する(フュージョンキャッチ)際、代理ユニットが捕獲条件に合致しない場合に起きる不具合を修正
 
 */
 
@@ -237,6 +238,32 @@ NormalAttackOrderBuilder._setInitialSkill = function(virtualActive, virtualPassi
 	}
 };
 
+//-----------------------------------------------
+// 代理ユニットが捕獲できない対象だった場合に処理を変更する
+//-----------------------------------------------
+var _CatchFusionFlowEntry__completeMemberData = CatchFusionFlowEntry._completeMemberData;
+CatchFusionFlowEntry._completeMemberData = function(preAttack) {
+	var active = preAttack.getActiveUnit();
+	var passive = preAttack.getPassiveUnit();
+	var attackParam = preAttack._attackParam;
+	
+	// 代理ユニットが捕獲される状況になった場合
+	if (attackParam.proxyBattler === passive) {
+		// 代理ユニットが捕獲できる条件に適合しない場合
+		if (FusionControl.isCatchable(active, passive, attackParam.fusionAttackData) === false) {
+			// 撃破された代理ユニットに捕獲状態が設定されているのでfalseにする
+			passive.setSyncope(false);
+			
+			// HPが0になっていた場合は死亡(負傷)状態を設定する
+			if (passive.getHp() < 1) {
+				DamageControl.setDeathState(passive);
+			}
+			return EnterResult.NOTENTER;
+		}
+	}
+	
+	return _CatchFusionFlowEntry__completeMemberData.call(this, preAttack);
+};
 
 
 // o-to氏作のOT_ExtraConfigSkillプラグインと併用する場合にスキル発動時にEP消費するための処理
