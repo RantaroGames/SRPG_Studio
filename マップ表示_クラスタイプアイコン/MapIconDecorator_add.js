@@ -33,6 +33,9 @@ ran
 https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78cb3ab12c3/README.md
 
 
+■更新履歴
+2023/01/23 環境設定の表示オンオフ設定が機能していなかった問題を修正
+
 */
 
 
@@ -42,8 +45,10 @@ var _alias001 = MapIconDecorator._addDecorationData;
 MapIconDecorator._addDecorationData = function(obj) {
 	_alias001.call(this, obj);
 	
-	// 引数(x座標, ｙ座標, アイコンタイプ, 点滅する:true/しない:false)
-	obj.addObjectType(0, 0, IconDecorationType.CLASSTYPE, false);
+	if (ConfigItem.IconDecoration_CLASSTYPE.getFlagValue() === 0) {
+		// 引数(x座標, ｙ座標, アイコンタイプ, 点滅する:true/しない:false)
+		obj.addObjectType(0, 0, IconDecorationType.CLASSTYPE, false);
+	}
 };
 
 
