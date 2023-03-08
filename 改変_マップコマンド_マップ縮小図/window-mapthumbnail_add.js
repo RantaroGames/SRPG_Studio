@@ -28,6 +28,9 @@ ver.1.225
 
 ■改変者
 ran
+
+■改変履歴
+2023/03/07 現在、表示中のマップ範囲を半透明の白色で(color: 0xffffff, alpha: 128）塗りつぶす処理を追加
 */
 
 (function() {
@@ -88,11 +91,16 @@ var MapThumbnailWindow = defineObject(BaseWindow,
 	},
 	
 	drawWindowContent: function(x, y) {
+		var session = root.getCurrentSession();
+		if (session === null) return;
+		
 		var cacheWidth = CurrentMap.getWidth() * GraphicsFormat.MAPCHIP_WIDTH;
 		var cacheHeight = CurrentMap.getHeight() * GraphicsFormat.MAPCHIP_HEIGHT;
 		var width = this.getWindowWidth() - (DefineControl.getWindowXPadding() * 2);
 		var height = this.getWindowHeight() - (DefineControl.getWindowYPadding() * 2);
 		var graphicsManager = root.getGraphicsManager();
+		var scrollpixelX = session.getScrollPixelX();
+		var scrollPixelY = session.getScrollPixelY();
 		
 		if (this._picCache !== null) {
 			if (this._picCache.isCacheAvailable()) {
@@ -105,12 +113,15 @@ var MapThumbnailWindow = defineObject(BaseWindow,
 		}
 		
 		graphicsManager.setRenderCache(this._picCache);
-		root.drawMapAll(root.getCurrentSession().getCurrentMapInfo());
+		root.drawMapAll(session.getCurrentMapInfo());
+		
+		// 現在、表示中のマップ範囲を白く塗りつぶす
+		graphicsManager.fillRange(scrollpixelX, scrollPixelY, root.getGameAreaWidth(), root.getGameAreaHeight(), 0xffffff, 128);
+		
 		this._drawUnitMark();
 		graphicsManager.resetRenderCache();
-		
+
 		this._picCache.drawStretchParts(x, y, width, height, 0, 0, cacheWidth, cacheHeight);
-		
 	},
 	
 	getWindowWidth: function() {
