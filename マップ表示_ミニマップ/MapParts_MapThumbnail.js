@@ -222,7 +222,7 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 			this._picCache = graphicsManager.createCacheGraphics(cacheWidth, cacheHeight);
 		}
 		
-		//　ミニマップとして描画する画像を指定したキャッシュを設定する
+		// ミニマップとして描画する画像を指定したキャッシュを設定する
 		graphicsManager.setRenderCache(this._picCache);
 		
 		// マップのサムネイル画像を描画する
