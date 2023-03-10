@@ -137,6 +137,9 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 	// ユニットの死亡や消去、登場、援軍の出現などの理由でユニット数が変化した場合を検知する
 	// getSortieListは「出撃・生存・フュージョンされていない」ユニットを格納している
 	// getAliveListは「生存・フュージョンされていない」ユニットを格納している
+	// ユニット数の変動のみを検知している都合上、短距離のユニット移動による変化に対応しきれない問題がある(※)
+	// (※イベントコマンドでスクロール値が変化しない位置にユニットを移動させた場合など)
+	// ただし、任意のユニットを選択すれば位置表示は更新されるので、それほど問題視することは無いと思う
 	_checkUnitCount: function() {
 		var obj = this._obj;
 		var playerList = PlayerList.getSortieList();
