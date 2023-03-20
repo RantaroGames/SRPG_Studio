@@ -412,11 +412,9 @@ MapEdit._optionAction = function(unit) {
 	var index = ConfigItem.MapParts_MiniMap.getFlagValue();
 	
 	if (unit === null && index !== 3) {
-		if (root.isInputAction(InputType.BTN3)) {
-			index++;
-			if (index > 2) index = 0;
-			root.getExternalData().env.MapParts_MiniMap = index;
-		}
+		index++;
+		if (index > 2) index = 0;
+		root.getExternalData().env.MapParts_MiniMap = index;
 	}
 	
 	return _MapEdit__optionAction.call(this, unit);
