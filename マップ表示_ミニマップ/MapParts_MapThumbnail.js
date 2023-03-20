@@ -31,6 +31,7 @@ ran
 
 ■更新履歴
 2023/03/08 新規作成
+2023/03/20 表示切替方式を変更(cキーで大→小→非表示→大...)
 
 */
 
@@ -41,10 +42,10 @@ ran
 //--------------------------------------
 //　ミニマップのサイズ
 var MiniMapSetting = {
-	// 幅(環境設定の値[大、小、なし]に対応する配列)
-	  MapWidth: [320, 240, 0]
+	// 幅(環境設定の値[大, 小, 非表示, なし]に対応する配列)
+	  MapWidth: [320, 240, 0, 0]
 	// 高さ(環境設定の値に対応する配列)
-	, MapHeight: [240, 180, 0]
+	, MapHeight: [240, 180, 0, 0]
 	// アルファ値
 	, MapAlpha: 160
 	
@@ -80,7 +81,7 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 		this._mapCursor = object;
 		this._init();
 		
-		if (this.getConfigFlagValue() !== 2) {
+		if (this.getConfigFlagValue() !== 3) {
 			this._obj = this._setPositionSettings();
 			this._scrollPos = this._getScrollPos();
 			this._currentPos = this._getCurrentPos();
@@ -96,7 +97,7 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 	
 	// ユニットが設定されたらキャッシュを破棄して画像を再取得する(カーソルを合わせたユニット位置を白丸で表示するため)
 	setUnit: function(unit) {
-		if (this.getConfigFlagValue() === 2) {
+		if (this.getConfigFlagValue() === 3) {
 			return;
 		}
 		
@@ -172,14 +173,14 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 		var x, y, unit;
 		
 		// 環境設定でミニマップを非表示にしている
- 		if (this.getConfigFlagValue() === 2) {
+ 		if (this.getConfigFlagValue() > 1) {
 			return;
 		}
 		
 		// オプションキー(Cキー)押下時はミニマップを描画しない 
-		if (root.isInputState(InputType.BTN3)) {
-			return;
-		}
+		// if (root.isInputState(InputType.BTN3)) {
+			// return;
+		// }
 		
 		// ユニットを選択した(向きが正面では無い)時は、ミニマップを描画しない
 		unit = this.getMapPartsTarget();
@@ -288,7 +289,7 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 		
 		var color = 0x000066;
 		var font = TextRenderer.getDefaultFont();
-		TextRenderer.drawKeywordText(x + this.getWindowWidth() - 150,  y + this.getWindowHeight(), 'C：ミニマップ非表示', -1, color, font);
+		TextRenderer.drawKeywordText(x + this.getWindowWidth() - 90,  y + this.getWindowHeight(), 'C：表示切替', -1, color, font);
 	},
 	
 	// ユニットの位置座標を取得して配列に格納する
@@ -405,6 +406,23 @@ function f_checkSceneType()
 }
 
 
+var _MapEdit__optionAction = MapEdit._optionAction;
+MapEdit._optionAction = function(unit) {
+	// マップ上でオプションキー(Cキー)押下時はミニマップの表示形式を遷移させる(大→小→なし→大...)
+	var index = ConfigItem.MapParts_MiniMap.getFlagValue();
+	
+	if (unit === null && index !== 3) {
+		if (root.isInputState(InputType.BTN3)) {
+			index++;
+			if (index > 2) index = 0;
+			root.getExternalData().env.MapParts_MiniMap = index;
+		}
+	}
+	
+	return _MapEdit__optionAction.call(this, unit);
+};
+
+
 //----------------------------
 // コンフィグ設定コマンド追加
 //----------------------------
@@ -423,14 +441,14 @@ ConfigItem.MapParts_MiniMap = defineObject(BaseConfigtItem,
 	
 	getFlagValue: function() {
 		if (typeof root.getExternalData().env.MapParts_MiniMap !== 'number') {
-			return 2;
+			return 3;
 		}
 	
 		return root.getExternalData().env.MapParts_MiniMap;
 	},
 	
 	getFlagCount: function() {
-		return 3;
+		return 4;
 	},
 	
 	getConfigItemTitle: function() {
@@ -442,7 +460,7 @@ ConfigItem.MapParts_MiniMap = defineObject(BaseConfigtItem,
 	},
 	
 	getObjectArray: function() {
-		return ['大', '小', 'なし'];
+		return ['大', '小', '非表示', 'なし'];
 	}
 }
 );
