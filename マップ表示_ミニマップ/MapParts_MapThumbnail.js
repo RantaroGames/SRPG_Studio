@@ -287,7 +287,7 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 		canvas.setFillColor(fillColor[0], fillColor[1]);
 		canvas.drawRectangle(x, y, width, height);
 		
-		var color = 0x000066;
+		var color = 0xffffcc;
 		var font = TextRenderer.getDefaultFont();
 		TextRenderer.drawKeywordText(x + this.getWindowWidth() - 90,  y + this.getWindowHeight(), 'C：表示切替', -1, color, font);
 	},
