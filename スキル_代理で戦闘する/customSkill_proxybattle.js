@@ -158,9 +158,8 @@ UnitCommand.Attack._createAttackParam = function() {
 	attackParam.attackStartType = AttackStartType.NORMAL;
 */
 	var attackParam = _UnitCommand_Attack__createAttackParam.call(this);
-	Fnc_createAttackParam_getProxyTareget(attackParam);
-
-	return attackParam;
+	
+	return Fnc_createAttackParam_getProxyTareget(attackParam);
 };
 
 
@@ -196,9 +195,8 @@ WeaponAutoAction._createAttackParam = function() {
 	attackParam.attackStartType = AttackStartType.NORMAL;
 */	
 	var attackParam = _WeaponAutoAction__createAttackParam.call(this);
-	Fnc_createAttackParam_getProxyTareget(attackParam);
-
-	return attackParam;
+	
+	return Fnc_createAttackParam_getProxyTareget(attackParam);
 };
 
 // 強制戦闘ではattackParamを変更する処理（現ver.では元の処理のまま。スキル発動を考慮しないようにしている）
