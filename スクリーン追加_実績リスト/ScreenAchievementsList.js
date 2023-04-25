@@ -23,6 +23,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 2022/11/06 新規作成
 2022/11/12 リストの列、行の調整について説明を追記
 2022/12/11 メンバ変数のスペルミスを修正　×_achievmentsList　〇_achievementsList
+2023/04/25 環境パラメータに解放済みdataIdが存在した場合にグローバルパラメータにdataIdが保存されない不具合を修正(周回などで既にクリア済みマップをもう一度クリアした時、その周のセーブデータに格納されなかった)
 
 
 //-----------------------------------------------
@@ -790,8 +791,11 @@ var F_AchievementControl = {
 		if (arr.indexOf(dataId) === -1) {
 			arr.push(dataId);
 			root.log('dataId:' + dataId + 'をenv.UnlockedArrayに挿入');
-			
-			// グローバルパラメータにも解放した実績のitemIdを記録しておく
+		}
+		
+		// グローバルパラメータにも解放した実績のitemIdを記録しておく
+		arr = this.getGlobaldata();
+		if (arr.indexOf(dataId) === -1) {
 			this.setGlobaldata(dataId);
 		}
 
@@ -824,6 +828,7 @@ var F_AchievementControl = {
 	
 	// グローバルパラメータに解放済み実績の配列を記録する
 	setGlobaldata: function(dataId) {
+		root.log('dataId:' + dataId + 'をglobal.unlockedIdListに挿入');
 		this.getGlobaldata().push(dataId);
 	},
 	
