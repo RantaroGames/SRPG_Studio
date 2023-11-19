@@ -43,6 +43,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2022/05/11 新規作成
+2023/11/19 ver.1.288対応
 
 */
 
