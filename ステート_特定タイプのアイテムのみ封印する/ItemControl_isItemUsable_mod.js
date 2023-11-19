@@ -71,11 +71,19 @@ ItemControl.isItemUsable = function(unit, item) {
 			}
 		}
 		
-		if (item.getItemType() === ItemType.KEY) {
-			if (item.getKeyInfo().isAdvancedKey()) {
-				// 「専用鍵」の場合は、クラスが鍵を使用できなければならない
-				if (!(unit.getClass().getClassOption() & ClassOptionFlag.KEY)) {
-					return false;
+		// ver.1.288対応
+		// ItemControl._isItemTypeAllowedで専用鍵とドーピングアイテムの使用可否処理が行われるようにった
+		if (root.getScriptVersion() >= 1288) {
+			if (!this._isItemTypeAllowed(unit, item)) {
+				return false;
+			}
+		} else {
+			if (item.getItemType() === ItemType.KEY) {
+				if (item.getKeyInfo().isAdvancedKey()) {
+					// 「専用鍵」の場合は、クラスが鍵を使用できなければならない
+					if (!(unit.getClass().getClassOption() & ClassOptionFlag.KEY)) {
+						return false;
+					}
 				}
 			}
 		}
