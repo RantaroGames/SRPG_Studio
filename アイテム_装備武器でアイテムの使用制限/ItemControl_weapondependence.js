@@ -69,7 +69,7 @@ var ITEM_INFO_TEXT = {
 };
 
 var _ItemControl_isItemUsable = ItemControl.isItemUsable;
-ItemControl.isItemUsable= function(unit, item) {
+ItemControl.isItemUsable = function(unit, item) {
 	var result = _ItemControl_isItemUsable.call(this, unit, item);
 	var weapon, weaponType;
 	
@@ -96,7 +96,7 @@ ItemControl.isItemUsable= function(unit, item) {
 		}
 	}
 	// 武器毎に個別判定する場合
-	else if (item.custom.WeaponDependence === 0)　{
+	else if (item.custom.WeaponDependence === 0) {
 		if (weapon.custom.isRegulation === true) {
 			return false;
 		}
