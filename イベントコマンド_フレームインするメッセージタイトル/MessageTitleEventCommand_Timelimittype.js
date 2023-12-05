@@ -73,6 +73,9 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 表示方法を終了時に開始時とは逆方向へフレームアウトして消去する形式に変更
 2022/01/15
 消去時のスライド方向を一定にするプロパティを追加
+2023/12/05
+本体ver.1288対応
+(this._getTitleCenterPos()の処理変更の際にthis._partsCountプロパティが追加された)
 */
 
 (function() {
@@ -176,6 +179,7 @@ var MessageTitleEventCommand_TimeLimitType = defineObject(MessageTitleEventComma
 		}
 		
 		this._textWidth = TextRenderer.getTextWidth(this._text, font);
+		this._partsCount = TitleRenderer.getTitlePartsCount(this._text, font);
 		this._partsWidth = TitleRenderer.getTitlePartsWidth();
 		this._partsHeight = TitleRenderer.getTitlePartsHeight();
 		
@@ -226,9 +230,9 @@ var MessageTitleEventCommand_TimeLimitType = defineObject(MessageTitleEventComma
 		var dy = 0;
 		
 		var text = this._text;
-		var count = TitleRenderer.getTitlePartsCount(text, font);
-		var titleWidth = 30 * (count + 2);// 30はthis._partsWidth (UIFormat.TITLE_WIDTH / 3)に等しい
-		var titleHeight = 60;// this._partsHeight (UIFormat.TITLE_HEIGHT)に等しい
+		var count = this._partsCount;//TitleRenderer.getTitlePartsCount(text, font);
+		var titleWidth = this._partsWidth * (count + 2);// this._partsWidthは30に等しい (UIFormat.TITLE_WIDTH / 3)
+		var titleHeight = this._partsHeight;// 60に等しい (UIFormat.TITLE_HEIGHT)
 		
 		if (this._xStart === -1 && this._xStart === -1) {
 			pos = this._getTitleCenterPos();
