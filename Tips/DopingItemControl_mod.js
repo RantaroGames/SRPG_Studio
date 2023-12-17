@@ -5,12 +5,12 @@
 
 var _DopingItemControl_isItemAllowed = DopingItemControl.isItemAllowed;
 DopingItemControl.isItemAllowed = function(targetUnit, item) {
+	var isMaxLv = targetUnit.getLv() >= Miscellaneous.getMaxLv(targetUnit);
 	// 経験値を入手できるなら使用可能
-	if (item.getExp() > 0) return true;
+	if (item.getExp() > 0 && !isMaxLv) return true;
 	
 	return _DopingItemControl_isItemAllowed.call(this, targetUnit, item);
 };
 
 })();
-
 
