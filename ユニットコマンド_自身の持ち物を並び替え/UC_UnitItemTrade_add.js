@@ -26,6 +26,10 @@ ran
 ■利用規約
 https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78cb3ab12c3/README.md
 
+
+■更新履歴
+2024/02/23 アイテム選択後にカーソルが_itemListDestに移動しないようにした
+
 */
 
 (function() {
@@ -135,6 +139,15 @@ UnitItemTradeScreen.drawScreenCycle = function() {
 	return _UnitItemTradeScreen_drawScreenCycle.call(this);
 };
 
+var _UnitItemTradeScreen__checkTracingTrade = UnitItemTradeScreen._checkTracingTrade;
+UnitItemTradeScreen._checkTracingTrade = function() {
+	if (this._unitSrc === this._unitDest) {
+		this._isSrcScrollbarActive = true;
+		this._setActive(true);
+	}
+	
+	_UnitItemTradeScreen__checkTracingTrade.call(this);
+};
 
 })();
 
