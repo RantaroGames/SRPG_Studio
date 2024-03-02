@@ -107,7 +107,7 @@ var isSupportRankDisplay = true;
 
 // 支援相手の表示方法を元のスクリプトの表示を利用する(true)/しない(false)
 // 他のプラグインと競合する場合 true に設定してみてください
-var useOriginalMethod = true;
+var useOriginalMethod = false;
 
 // 支援ランクを表示する文字の配列
 var ConvertSupportRank = [ 'C', 'B', 'A', 'S' ];
