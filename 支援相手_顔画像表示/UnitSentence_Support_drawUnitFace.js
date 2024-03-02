@@ -174,13 +174,13 @@ UnitSentence.Support._getSupportRank = function(unit, targetUnit) {
 	
 	if (arr === null || typeof arr === 'undefined') return 0;
 
-	targatId = targetUnit.getId();
+	targetId = targetUnit.getId();
 
 	count = arr.length;
 	for (i = 0; i < count; i++) {
 		data = arr[i];
 		if (data === null) continue;
-		if (data[0] === targatId) {
+		if (data[0] === targetId) {
 			return data[1];
 		}
 	}
