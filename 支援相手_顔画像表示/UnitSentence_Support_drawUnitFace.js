@@ -74,6 +74,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 ■更新履歴
 2022/10/23 新規作成
 2024/03/02 支援ランクを文字表示する機能を追加
+2024/03/03 異なる同名ユニット(複数の同名モブ敵など)に支援を設定していた場合の表示不具合を修正
 
 */
 
@@ -128,15 +129,15 @@ UnitSentence.Support.setCalculatorValue = function(unit, weapon, totalStatus) {
 // ユニットが持つ支援データからオブジェクトを取得しておく
 // {targetName: '相手の名前', handle: '顔画像のhandle', rank: 支援ランクの数値}
 UnitSentence.Support._getSupportData = function(unit) {
-	var i, count, data, targetUnit, targetName, obj;
+	var i, count, data, targetUnit, obj;
 	var supportArray = [];
 	
-	function f_getIndex(arr, name)
+	function f_getIndex(arr, targetUnit)
 	{
 		var i, data;
 		for (i = 0; i < arr.length; i++) {
 			data = arr[i];
-			if (data !== null && data.targetName === name) {
+			if (data !== null && data.targetUnit.getId() === targetUnit.getId()) {
 				return i;
 			}
 		}
@@ -145,17 +146,15 @@ UnitSentence.Support._getSupportData = function(unit) {
 	
 	count = unit.getSupportDataCount();
 	for (i = 0; i < count; i++) {
-		obj = {targetName: null, handle: null, rank: 0};
+		obj = {};
 		data = unit.getSupportData(i);
 		targetUnit = data.getUnit();
 		
-		if (targetUnit !== null && data.isGlobalSwitchOn() && data.isVariableOn()) {
-			targetName = targetUnit.getName();
-			
-			// 支援する相手の名前が配列supportArrayに格納されていなければ支援ランクを取得する
-			if (f_getIndex(supportArray, targetName) === -1) {
-				obj.targetName = targetName;
-				obj.handle = targetUnit.getFaceResourceHandle();
+		if (targetUnit !== null && data.isGlobalSwitchOn() && data.isVariableOn()) {			
+			// 支援する相手が配列supportArrayに格納されていなければ支援ランクを取得する
+			// 名前で判別すると複数の同名ユニットを支援相手に設定していた場合に不具合が生じる
+			if (f_getIndex(supportArray, targetUnit) === -1) {
+				obj.targetUnit = targetUnit;
 				obj.rank = this._getSupportRank(unit, targetUnit);
 
 				supportArray.push(obj);
@@ -201,7 +200,7 @@ UnitSentence.Support.drawUnitSentence = function(x, y, unit, weapon, totalStatus
 };
 
 UnitSentence.Support._drawSupportData = function(x, y, unit, weapon, totalStatus) {
-	var arr, i, count, obj, rank, rankColor;
+	var arr, i, count, obj, rank, rankColor, targetUnit;
 	var textui = this.getUnitSentenceTextUI();
 	var color = ColorValue.KEYWORD;
 	var font = textui.getFont();
@@ -219,12 +218,13 @@ UnitSentence.Support._drawSupportData = function(x, y, unit, weapon, totalStatus
 	for (i = 0; i < count; i++) {
 		obj = arr[i];
 		if (obj === null) continue;
+		targetUnit = obj.targetUnit;
 				
 		// 顔画像を縮小表示する処理
-		func_drawShrinkFace(x - ImagePosX, y, obj.handle, FaceImageSize, FaceImageSize);
+		func_drawShrinkFace(x - ImagePosX, y, targetUnit.getFaceResourceHandle(), FaceImageSize, FaceImageSize);
 
 		if (!useOriginalMethod) {
-			TextRenderer.drawKeywordText(x + NamePosX, y, obj.targetName, length, color, font);
+			TextRenderer.drawKeywordText(x + NamePosX, y, targetUnit.getName(), length, color, font);
 		}
 		
 		// 支援ランクを文字表示する場合の処理
