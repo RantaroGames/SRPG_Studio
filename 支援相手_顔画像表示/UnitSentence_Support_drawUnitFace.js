@@ -352,8 +352,9 @@ var UnitCustomParameterContorol = {
 	},
 	
 	getCustomParameter: function() {
-		var unit = this._getUnit();
-		var keyword = this._getKeyWord();
+		var content = this._getOriginalContent();
+		var unit = content.getUnit();
+		var keyword = content.getCustomKeyword();
 		
 		if (unit === null || keyword === '') {
 			return;
@@ -363,8 +364,9 @@ var UnitCustomParameterContorol = {
 	},
 	
 	setCustomParameter: function(value) {
-		var unit = this._getUnit();
-		var keyword = this._getKeyWord();
+		var content = this._getOriginalContent();
+		var unit = content.getUnit();
+		var keyword = content.getCustomKeyword();
 		
 		if (unit === null || keyword === '') {
 			return;
@@ -375,8 +377,9 @@ var UnitCustomParameterContorol = {
 	
 	// indexで指定したオリジナルデータの数値をカスタムパラメータに設定する
 	setOriginalDataNumber: function(index) {
-		var unit = this._getUnit();
-		var keyword = this._getKeyWord();
+		var content = this._getOriginalContent();
+		var unit = content.getUnit();
+		var keyword = content.getCustomKeyword();
 		var value;
 		
 		if (unit === null || keyword === '') {
@@ -388,7 +391,7 @@ var UnitCustomParameterContorol = {
 			return;
 		}
 		
-		value = this._getValue(index);
+		value = content.getValue(index);
 		
 		unit.custom[keyword] = value;
 	},
@@ -421,8 +424,9 @@ var UnitCustomParameterContorol = {
 	},
 	
 	_putLog: function(arr) {
-		var unit = this._getUnit();
-		var keyword = this._getKeyWord();
+		var content = this._getOriginalContent();
+		var unit = content.getUnit();
+		var keyword = content.getCustomKeyword();
 		var count = arr.length;
 		var i;
 		
