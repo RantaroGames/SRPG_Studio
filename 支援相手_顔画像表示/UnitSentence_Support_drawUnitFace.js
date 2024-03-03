@@ -114,7 +114,7 @@ var useOriginalMethod = false;
 var ConvertSupportRank = [ 'C', 'B', 'A', 'S' ];
 
 // 支援ランク表示カラー （16進数表記）
-var RankColor = [0xffffff, 0xf9f09d, 0xccff33, 0x66ff33];
+var RankColor = [0xffffff, 0xffffff, 0xccff33, 0x66ff33];
 
 //------------------------------------------
 
