@@ -85,9 +85,9 @@ UnitSummaryScrollbar._drawFusionData = function(x, y, unit, color, font) {
 			TextRenderer.drawKeywordText(x, y, text, -1, color, font);
 		}
 	}
-	else {
-		TextRenderer.drawKeywordText(x, y, 'フュージョン無し', -1, color, font);
-	}
+//	else {
+//		TextRenderer.drawKeywordText(x, y, 'フュージョン無し', -1, color, font);
+//	}
 };
 	
 	
