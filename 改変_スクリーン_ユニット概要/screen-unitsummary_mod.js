@@ -81,7 +81,7 @@ UnitSummaryScrollbar._drawFusionData = function(x, y, unit, color, font) {
 				
 		fusionParent = FusionControl.getFusionParent(unit);
 		if (fusionParent !== null) {
-			text = fusionParent.getName() + 'に' + fusionData.getName() + 'されている' + ' (子x:' + fusionParent.getMapX() + ' 子y:' + fusionParent.getMapY() + ')';
+			text = fusionParent.getName() + 'に' + fusionData.getName() + 'されている' + ' (親x:' + fusionParent.getMapX() + ' 親y:' + fusionParent.getMapY() + ')';
 			TextRenderer.drawKeywordText(x, y, text, -1, color, font);
 		}
 	}
