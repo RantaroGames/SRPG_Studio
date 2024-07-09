@@ -26,7 +26,7 @@ ran
 // Tips: ゲームレイアウト > コマンドレイアウト> マップコマンド でコマンド名（ターン終了）を変更可能
 
 // 確認ウィンドウに表示するメッセージ
-StringTable.TurnEnd_Question = 'ターンを終了しますか？'
+var TurnEnd_Question = 'ターンを終了しますか？'
 
 // 確認ウィンドウ用のプロパティ
 MapCommand.TurnEnd._questionWindow = null;
@@ -41,7 +41,7 @@ MapCommand.TurnEnd.openCommand = function() {
 	}
 	
 	this._questionWindow = createWindowObject(QuestionWindow, this);
-	this._questionWindow.setQuestionMessage(StringTable.TurnEnd_Question);
+	this._questionWindow.setQuestionMessage(TurnEnd_Question);
 	this._questionWindow.setQuestionActive(true);
 };
 
