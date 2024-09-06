@@ -4,6 +4,7 @@ scriptexecute-changemessagelayout_mod.js
 
 ■SRPG Studio対応バージョン
 var.1.301
+※ (1.279より前のバージョンには対応していません)
 
 ■プラグインの概要
 話者（ユニット, NPC）のカスタムパラメータを通じてメッセージレイアウトを指定のIDのものへ変更します
