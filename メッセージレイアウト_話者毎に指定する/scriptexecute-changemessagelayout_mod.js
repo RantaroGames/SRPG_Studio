@@ -17,6 +17,7 @@ var.1.301
 
 2.ユニット（またはNPC)のカスタムパラメータに以下の値を記述する
 数値は、メッセージレイアウトで作成したデータのidを記入する
+(id不正の場合は、メッセージレイアウトのデータリストで一番上のデータが採用される)
 
 {
   messageLayoutId: 1
@@ -34,14 +35,14 @@ ran
 
 var alias1 = MessageShowEventCommand._getLayoutTop;
 MessageShowEventCommand._getLayoutTop = function() {
-	var id = -1;
+	var id;
 	
 	if (typeof root.getMetaSession().global.layout_top !== 'undefined') {
 		return getLayout(root.getMetaSession().global.layout_top);
 	}
 	else {
 		id = fnc_getCustomId();
-		if (id !== -1) {
+		if (id >= 0) {
 			return getLayout(id);
 		}
 		
@@ -51,14 +52,14 @@ MessageShowEventCommand._getLayoutTop = function() {
 
 var alias2 = MessageShowEventCommand._getLayoutCenter;
 MessageShowEventCommand._getLayoutCenter = function() {
-	var id = -1;
+	var id;
 	
 	if (typeof root.getMetaSession().global.layout_center !== 'undefined') {
 		return getLayout(root.getMetaSession().global.layout_center);
 	}
 	else {
 		id = fnc_getCustomId();
-		if (id !== -1) {
+		if (id >= 0) {
 			return getLayout(id);
 		}
 		
@@ -68,14 +69,14 @@ MessageShowEventCommand._getLayoutCenter = function() {
 
 var alias3 = MessageShowEventCommand._getLayoutBottom;
 MessageShowEventCommand._getLayoutBottom = function() {
-	var id = -1;
+	var id;
 	
 	if (typeof root.getMetaSession().global.layout_bottom !== 'undefined') {
 		return getLayout(root.getMetaSession().global.layout_bottom);
 	}
 	else {
 		id = fnc_getCustomId();
-		if (id !== -1) {
+		if (id >= 0) {
 			return getLayout(id);
 		}
 		
@@ -85,14 +86,14 @@ MessageShowEventCommand._getLayoutBottom = function() {
 
 var alias4 = MessageTeropEventCommand._getMessageLayout;
 MessageTeropEventCommand._getMessageLayout = function() {
-	var id = -1;
+	var id;
 	
 	if (typeof root.getMetaSession().global.layout_terop !== 'undefined') {
 		return getLayout(root.getMetaSession().global.layout_terop);
 	}
 	else {
 		id = fnc_getCustomId();
-		if (id !== -1) {
+		if (id >= 0) {
 			return getLayout(id);
 		}
 		
@@ -102,14 +103,14 @@ MessageTeropEventCommand._getMessageLayout = function() {
 
 var alias5 = StillMessageEventCommand._getMessageLayout;
 StillMessageEventCommand._getMessageLayout = function() {
-	var id = -1;
+	var id;
 	
 	if (typeof root.getMetaSession().global.layout_still !== 'undefined') {
 		return getLayout(root.getMetaSession().global.layout_still);
 	}
 	else {
 		id = fnc_getCustomId();
-		if (id !== -1) {
+		if (id >= 0) {
 			return getLayout(id);
 		}
 		
