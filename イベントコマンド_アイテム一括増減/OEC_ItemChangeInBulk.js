@@ -88,7 +88,7 @@ var NoticeViewSetting = {
 	// true 中央表示から微調整する場合 / false 描画位置を直接指定する
 ,	RELATIVE: true
 	// x,y座標の補正値
-,   POSX: 0
+,	POSX: 0
 ,	POSY: 0
 };
 
