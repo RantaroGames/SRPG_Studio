@@ -2,7 +2,7 @@
 ■ファイル
 OEC_ItemChangeInBulk.js
 
-■SRPG Studio対応バージョン:1.301
+■SRPG Studio対応バージョン:1.302
 
 ■プラグインの概要
 指定したアイテムを複数個一括でストックまたはユニットに増減させるオリジナルイベントコマンドを実装します。
@@ -69,6 +69,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2024/10/04 新規作成
+2024/10/06 通知画像をスライド表示できるようにした
 
 */
 
@@ -84,10 +85,15 @@ var NoticeViewSetting = {
 	// アイテムを減らした時	
 ,	LOSTITEM: StringTable.LostTitle_ItemChange
 
-	// タイトル画像の描画位置補正
-	// true 中央表示から微調整する場合 / false 描画位置を直接指定する
-,	RELATIVE: true
-	// x,y座標の補正値
+	// スライド方向 0:左からフレームイン, 1:右から, 2:上から, 3:下から, 4:左上から, 5:左下から, 6:右上から, 7:右下から, 8:スライド無し
+,	DIRECTION: 8
+	// 画像の分割数 8なら1フレーム毎に8分割ずつスライド
+,	INTERVAL: 8
+	// 通知の表示総フレーム数 60フレーム=約1秒 指定したフレーム数に到達すると決定ボタンを押さなくても通知は自動で消去されます
+,	FRAMEMAX: 180
+	// 表示位置 0:左中央, 1:右中央, 2:上中央, 3:下中央, 4:左上, 5:左下, 6:右上, 7:右下, 8:中央
+,	BASEPOS: 8
+	// 表示位置補正x(正の値で右に, 負の値で左に補正), y(正の値で下に, 負の値で上に補正)
 ,	POSX: 0
 ,	POSY: 0
 };
@@ -300,21 +306,6 @@ var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 			this._itemArray = arr;
 		}
 	},
-		
-	_drawNotice: function() {
-		var x, y;
-		
-		if (NoticeViewSetting.RELATIVE === true) {
-			x = LayoutControl.getCenterX(-1, this._itemChangeView.getNoticeViewWidth()) + NoticeViewSetting.POSX;
-			y = LayoutControl.getCenterY(-1, this._itemChangeView.getNoticeViewHeight()) + NoticeViewSetting.POSY;
-		}
-		else {
-			x = NoticeViewSetting.POSX;
-			y = NoticeViewSetting.POSY;
-		}
-		
-		this._itemChangeView.drawNoticeView(x, y);
-	},
 	
 	getEventCommandName: function() {
 		return 'OEC_ItemChangeInBulk';
@@ -341,6 +332,23 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 		this._setTitlePartsCount();
 		
 		this._playItemGetSound();
+		
+		this._counter = createObject(CycleCounter);
+		this._counter.setCounterInfo(NoticeViewSetting.FRAMEMAX);
+		//高速化を受け付けないようにする
+		this._counter.disableGameAcceleration();
+	},
+	
+	moveNoticeView: function() {
+		if (this._counter.moveCycleCounter() !== MoveResult.CONTINUE) {
+			return MoveResult.END;
+		}
+		
+		if (InputControl.isSelectAction()) {
+			return MoveResult.END;
+		}
+		
+		return MoveResult.CONTINUE;
 	},
 	
 	drawNoticeView: function(x, y) {
@@ -350,9 +358,51 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 		var height = TitleRenderer.getTitlePartsHeight();
 		var count = this.getTitlePartsCount();
 		
-		TitleRenderer.drawTitle(pic, x, y, width, height, count);
+		var obj;
+		var dx = 0, dy = 0;
+		var xPadding = DefineControl.getWindowXPadding();
+		var yPadding = DefineControl.getWindowYPadding();
+		var titleWidth = this.getNoticeViewWidth();
+		var titleHeight = this.getNoticeViewHeight();
+		
+		if (this._counter.getCounter() < NoticeViewSetting.INTERVAL) {
+			obj = this._getSlideDirection(NoticeViewSetting.DIRECTION, titleWidth, titleHeight);
+			dx += obj.dx;
+			dy += obj.dy;
+//		root.log( this._counter.getCounter() + ': dx:' + dx + 'dy:' + dy);
+		}
+		else if (NoticeViewSetting.FRAMEMAX - this._counter.getCounter() < NoticeViewSetting.INTERVAL) {
+			obj = this._getEraseDirection(NoticeViewSetting.DIRECTION, titleWidth, titleHeight);
+			dx -= obj.dx;
+			dy -= obj.dy;
+//		root.log(NoticeViewSetting.FRAMEMAX - this._counter.getCounter() + ': dx:' + dx + 'dy:' + dy);
+		}
+		else {
+			dx = 0;
+			dy = 0;
+//		root.log('E' + this._counter.getCounter() + ': dx:' + dx + 'dy:' + dy);
+		}
+	
+		// 表示位置 0:左中央, 1:右中央, 2:上中央, 3:下中央, 4:左上, 5:左下, 6:右上, 7:右下, 8:中央
+		switch (NoticeViewSetting.BASEPOS) {
+			case 0: x = xPadding; break;
+			case 1: x = root.getGameAreaWidth() - titleWidth - xPadding; break;
+			case 2: y = yPadding; break;
+			case 3: y = root.getGameAreaHeight() - titleHeight - yPadding; break;
+			case 4: x = xPadding; y = yPadding; break;
+			case 5: x = xPadding; y = root.getGameAreaHeight() - titleHeight - yPadding; break;
+			case 6: x = root.getGameAreaWidth() - titleWidth - xPadding; y = yPadding; break;
+			case 7: x = root.getGameAreaWidth() - titleWidth - xPadding; y = root.getGameAreaHeight() - titleHeight - yPadding; break;
+			case 8: break;
+			default: break;
+		}
+		
+		x += NoticeViewSetting.POSX;
+		y += NoticeViewSetting.POSY;
+		
+		TitleRenderer.drawTitle(pic, x + dx, y + dy, width, height, count);
 
-		this.drawNoticeViewContent(x + 20, y + 18);
+		this.drawNoticeViewContent(x + 20 + dx, y + 18 + dy);
 		
 		//取得者名を描画する(ゲストのアイテム増減を許可しない時はストック表示)
 		var text = root.queryCommand('stock_unitcommand');
@@ -367,7 +417,7 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 		pic = textui.getUIImage();
 		count = TitleRenderer.getTitlePartsCount(text, font);
 	
-		TextRenderer.drawFixedTitleText(x + 10, y - 42, text, color, font, TextFormat.CENTER, pic, count);
+		TextRenderer.drawFixedTitleText(x + 10 + dx, y - 42 + dy, text, color, font, TextFormat.CENTER, pic, count);
 	},
 	
 	// 増減させたアイテムの名前と個数を表示する処理
@@ -408,7 +458,110 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 		else if (this._increaseType === IncreaseType.DECREASE) {
 			MediaControl.soundDirect('itemlost');
 		}
+	},
+	
+	_getSlideDirection: function(direction, titleWidth, titleHeight) {
+		var obj = {};
+			obj.dx = 0;
+			obj.dy = 0;
+	
+		switch (direction) {
+			case 0: //左からスライド
+				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
+				obj.dy = 0;
+				break;
+			case 1: //右から
+				obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL));
+				obj.dy = 0;
+				break;
+			case 2: //上から
+				obj.dx = 0;
+				obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
+				break;
+			case 3: //下から
+				obj.dx = 0;
+				obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL));
+				break;
+			case 4: //左上から
+				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
+				obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
+				break;
+			case 5: //左下から
+				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
+				obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL));
+				break;
+			case 6: //右上から
+				obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL));
+				obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
+				break;
+			case 7: //右下から
+				obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL));
+				obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL));
+				break;
+			case 8: //スライドしない
+				obj.dx = 0;
+				obj.dy = 0;
+				break;
+			default: //左からスライド
+				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
+				obj.dy = 0;
+				break;
+		}
+	
+		return obj;
+	},
+	
+	_getEraseDirection: function(direction, titleWidth, titleHeight) {
+		var obj = {};
+			obj.dx = 0;
+			obj.dy = 0;
+		
+		switch (direction) {
+			case 0: //左からスライド
+				obj.dx = Math.ceil(titleWidth - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL));
+				obj.dy = 0;
+				break;
+			case 1: //右から
+				obj.dx = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
+				obj.dy = 0;
+				break;
+			case 2: //上から
+				obj.dx = 0;
+				obj.dy = Math.ceil(titleHeight - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL));
+				break;
+			case 3: //下から
+				obj.dx = 0;
+				obj.dy = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
+				break;
+			case 4: //左上から
+				obj.dx = Math.ceil(titleWidth - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL));
+				obj.dy = Math.ceil(titleHeight - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL));
+				break;
+			case 5: //左下から
+				obj.dx = Math.ceil(titleWidth - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL));
+				obj.dy = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
+				break;
+			case 6: //右上から
+				obj.dx = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
+				obj.dy = Math.ceil(titleHeight - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL));
+				break;
+			case 7: //右下から
+				obj.dx = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
+				obj.dy = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
+				break;
+			case 8: //スライドしない
+				obj.dx = 0;
+				obj.dy = 0;
+				break;
+			default: //左からスライド
+				obj.dx = Math.ceil(titleWidth - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL));
+				obj.dy = 0;
+				break;
+		}
+	
+		return obj;
 	}
+	
 }
 );
 
