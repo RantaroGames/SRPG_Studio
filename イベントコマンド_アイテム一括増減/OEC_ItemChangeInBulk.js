@@ -371,18 +371,15 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 			obj = this._getSlideDirection(NoticeViewSetting.DIRECTION, titleWidth, titleHeight);
 			dx += obj.dx;
 			dy += obj.dy;
-//		root.log( this._counter.getCounter() + ': dx:' + dx + 'dy:' + dy);
 		}
 		else if (NoticeViewSetting.FRAMEMAX - this._counter.getCounter() < NoticeViewSetting.INTERVAL) {
 			obj = this._getEraseDirection(NoticeViewSetting.DIRECTION, titleWidth, titleHeight);
 			dx -= obj.dx;
 			dy -= obj.dy;
-//		root.log(NoticeViewSetting.FRAMEMAX - this._counter.getCounter() + ': dx:' + dx + 'dy:' + dy);
 		}
 		else {
 			dx = 0;
 			dy = 0;
-//		root.log('E' + this._counter.getCounter() + ': dx:' + dx + 'dy:' + dy);
 		}
 	
 		// 表示位置 0:左中央, 1:右中央, 2:上中央, 3:下中央, 4:左上, 5:左下, 6:右上, 7:右下, 8:中央
