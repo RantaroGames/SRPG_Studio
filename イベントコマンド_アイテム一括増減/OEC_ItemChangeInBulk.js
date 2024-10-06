@@ -404,20 +404,8 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 
 		this.drawNoticeViewContent(x + 20 + dx, y + 18 + dy);
 		
-		//取得者名を描画する(ゲストのアイテム増減を許可しない時はストック表示)
-		var text = root.queryCommand('stock_unitcommand');
-		
-		if (this._unit !== null && Miscellaneous.isItemAccess(this._unit) ) {
-			text = this._unit.getName();
-		}
-			
-		textui = root.queryTextUI('objective_title');
-		color = textui.getColor();
-		font = textui.getFont();
-		pic = textui.getUIImage();
-		count = TitleRenderer.getTitlePartsCount(text, font);
-	
-		TextRenderer.drawFixedTitleText(x + 10 + dx, y - 42 + dy, text, color, font, TextFormat.CENTER, pic, count);
+		// 増減の対象名を描画する（不要なら下の一行をコメントアウト）
+		this.drawTargetName(x + 10 + dx, y - 42 + dy);
 	},
 	
 	// 増減させたアイテムの名前と個数を表示する処理
@@ -436,6 +424,21 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 		width += TextRenderer.getTextWidth(this._targetItem.getName(), font) + 35;
 		TextRenderer.drawSignText(x + width, y + dy, '×');
 		NumberRenderer.drawAttackNumber(x + width + 15, y + dy, this._itemCount);
+	},
+	
+	//取得者名を描画する(ゲストのアイテム増減を許可しない時はストック表示)
+	drawTargetName: function(x, y) {
+		var textui = root.queryTextUI('objective_title');
+		var color = textui.getColor();
+		var font = textui.getFont();
+		var pic = textui.getUIImage();
+		var text = root.queryCommand('stock_unitcommand');
+		if (this._unit !== null && Miscellaneous.isItemAccess(this._unit) ) {
+			text = this._unit.getName();
+		}
+		var count = TitleRenderer.getTitlePartsCount(text, font);
+	
+		TextRenderer.drawFixedTitleText(x, y, text, color, font, TextFormat.CENTER, pic, count);
 	},
 	
 	// タイトル画像を取得する 
