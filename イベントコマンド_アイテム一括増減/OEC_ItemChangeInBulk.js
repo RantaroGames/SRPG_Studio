@@ -96,6 +96,8 @@ var NoticeViewSetting = {
 	// 表示位置補正x(正の値で右に, 負の値で左に補正), y(正の値で下に, 負の値で上に補正)
 ,	POSX: 0
 ,	POSY: 0
+	// 対象(ユニットまたはストック)の名前を描画する場合はtrue, しない場合はfalse
+,	DRAWTARGETNAME: true
 };
 
 //-------------------------------------------------------------------
@@ -404,8 +406,10 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 
 		this.drawNoticeViewContent(x + 20 + dx, y + 18 + dy);
 		
-		// 増減の対象名を描画する（不要なら下の一行をコメントアウト）
-		this.drawTargetName(x + 10 + dx, y - 42 + dy);
+		// 増減の対象名を描画する
+		if (NoticeViewSetting.DRAWTARGETNAME === true) {
+			this.drawTargetName(x + 10 + dx, y - 42 + dy);
+		}
 	},
 	
 	// 増減させたアイテムの名前と個数を表示する処理
