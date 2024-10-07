@@ -186,7 +186,7 @@ ItemChangeNoticeView._getEraseDirection = function(direction, titleWidth, titleH
 	switch (direction) {
 		case 0: //左からスライド
 			obj.dx = Math.ceil(titleWidth - (SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / SlideSetting.INTERVAL));
-		obj.dy = 0;
+			obj.dy = 0;
 			break;
 		case 1: //右から
 			obj.dx = Math.ceil((SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / SlideSetting.INTERVAL) - titleWidth);
