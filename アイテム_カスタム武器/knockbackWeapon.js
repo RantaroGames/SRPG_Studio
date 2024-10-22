@@ -34,7 +34,7 @@ ver.1.302
 }
 		
 3.武器の情報ウィンドウにノックバック関連の記述を「表記しない」場合
-本プラグイン内の該当箇所をコメントアウトする(358行付近)
+本プラグイン内の該当箇所をコメントアウトする(364行付近)
 
 4.ノックバックされたくないユニット(ボスや特定地点を守っている敵など）を作成する方法
 ユニットのカスタムパラメータに以下を記述する
@@ -47,6 +47,7 @@ ver.1.302
 ・攻撃が命中した場合に敵を1マス後退させる（敵が攻撃者の左にいれば左に移動）
 ・自分から戦闘を仕掛けた場合のみ発動する
 ・その戦闘では必ず後攻になる
+・距離2以上の攻撃ではノックバックは発生しない
 ・ノックバック武器では追撃することができない(連続攻撃は許可しているが、最後の攻撃が命中していないとノックバックは発動しない）
 ・敵が追撃が可能な場合は、その追撃を先に処理してから後攻の攻撃に移る
 ・敵がノックバックを受けた時、移動先が移動できない地形だった場合は元の位置に戻る
@@ -79,6 +80,7 @@ ran
 
 ■更新履歴
 2024/10/21 新規作成
+2024/10/23 距離2以上の攻撃ではノックバックが発生しないように修正
 
 */
 
@@ -119,7 +121,8 @@ var KnockBackFlowEntry = defineObject(BaseFlowEntry,
 	_checkTargetUnit: function(preAttack) {
 		var active = preAttack.getActiveUnit();
 		var passive = preAttack.getPassiveUnit();
-		var unitSrc = AttackControl.getAttackInfo().unitSrc;
+		var attackInfo = AttackControl.getAttackInfo();
+		var unitSrc = attackInfo.unitSrc;
 		var order;
 		
 		// 戦闘を仕掛けたユニットと最後に攻撃したユニットが異なる
@@ -130,6 +133,9 @@ var KnockBackFlowEntry = defineObject(BaseFlowEntry,
 		
 		// 攻撃したユニットの武器がノックバック武器ではない
 		if (Fnc_isKnockbackableWeapon(active) !== true) return false;
+		
+		// 距離1の攻撃以外ではノックバック不可
+		if (attackInfo.isDirectAttack === false) return false; 
 		
 		// 直前の攻撃が命中しなかった
 		order = AttackControl.getAttackOrder();
