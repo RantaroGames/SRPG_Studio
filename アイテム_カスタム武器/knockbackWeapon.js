@@ -34,7 +34,7 @@ ver.1.302
 }
 		
 3.武器の情報ウィンドウにノックバック関連の記述を「表記しない」場合
-本プラグイン内の該当箇所をコメントアウトする(360行付近)
+本プラグイン内の該当箇所をコメントアウトする(358行付近)
 
 4.ノックバックされたくないユニット(ボスや特定地点を守っている敵など）を作成する方法
 ユニットのカスタムパラメータに以下を記述する
@@ -255,8 +255,6 @@ Calculator.calculateRoundCount = function(active, passive, weapon) {
 // ノックバック武器で攻撃を仕掛けた場合は確定で後攻にする
 var _NormalAttackOrderBuilder__isDefaultPriority = NormalAttackOrderBuilder._isDefaultPriority;
 NormalAttackOrderBuilder._isDefaultPriority = function(virtualActive, virtualPassive) {
-	var active = virtualActive.unitSelf;
-	var passive = virtualPassive.unitSelf;
 	var weapon = virtualActive.weapon;
 	
 	if (weapon !== null && weapon.custom.knockBackWeapon === true) {
