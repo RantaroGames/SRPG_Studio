@@ -34,7 +34,7 @@ ver.1.302
 }
 		
 3.武器の情報ウィンドウにノックバック関連の記述を「表記しない」場合
-本プラグイン内の該当箇所をコメントアウトする(358行付近)
+本プラグイン内の該当箇所をコメントアウトする(360行付近)
 
 4.ノックバックされたくないユニット(ボスや特定地点を守っている敵など）を作成する方法
 ユニットのカスタムパラメータに以下を記述する
@@ -68,6 +68,9 @@ NormalAttackOrderBuilder._isDefaultPriority
 ・戦闘をシミュレートする関数
 NormalAttackOrderBuilder._startVirtualAttack
 
+・戦闘時のラウンド数（追撃数）を取得する関数
+virtualAttackUnit.roundCount を変更している処理
+
 ・武器の情報を表示する関数
 ItemInfoWindow._configureWeapon 
 
@@ -76,7 +79,6 @@ ran
 
 ■更新履歴
 2024/10/21 新規作成
-
 
 */
 
