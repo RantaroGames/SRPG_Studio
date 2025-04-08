@@ -31,7 +31,8 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 ■更新履歴
 2021/12/07 新規作成
 2021/12/20 強制戦闘ではスキル発動を許可しない方式に変更
-2023/01/11　戦闘後に捕獲する(フュージョンキャッチ)際、代理ユニットが捕獲条件に合致しない場合に起きる不具合を修正
+2023/01/11 戦闘後に捕獲する(フュージョンキャッチ)際、代理ユニットが捕獲条件に合致しない場合に起きる不具合を修正
+2025/04/08 「行動禁止」「暴走」ステートが付与されていた場合は代理戦闘スキルを発動させないように修正
 
 */
 
@@ -82,6 +83,14 @@ var Fnc_createAttackParam_getProxyTareget = function(attackParam) {
 	
 		if (targetUnit !== null) {
 			//root.log(targetUnit.getName());
+			
+			// 攻撃者と代理戦闘スキル所持者が一致した場合は別の発動者を探す
+			// スキル所持者が暴走ステートで味方を攻撃した場合に発生しうる
+			if (attackParam.unit === targetUnit) continue;
+			
+			// 「行動禁止」「暴走」ステートを付与されていた場合は代理戦闘を行わない
+			if (StateControl.isBadStateOption(targetUnit, BadStateOption.NOACTION) === true) continue;
+			if (StateControl.isBadStateOption(targetUnit, BadStateOption.BERSERK) === true) continue;
 		
 			// 該当スキルの配列
 			skillArray = SkillControl.getDirectSkillArray(targetUnit, SkillType.CUSTOM, keyword);
