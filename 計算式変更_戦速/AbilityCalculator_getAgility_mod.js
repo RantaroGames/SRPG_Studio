@@ -32,7 +32,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 (function() {
 
 // 所持品の重さを加算して総重量を求める処理(新規作成)
-AbilityCalculator._getPossesionItemGrossWeight　= function(unit) {
+AbilityCalculator._getPossesionItemGrossWeight = function(unit) {
 	var i, item, count;
 	var value = 0;
 	
