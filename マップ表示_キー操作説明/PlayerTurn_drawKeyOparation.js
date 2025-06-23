@@ -54,7 +54,7 @@ var KeyOperationTipsTable = {
 	// リソース> リソース使用箇所> テキストUI で使用されている見出し(*_title) 内部名を記述する
 ,	TEXTUI: 'questreward_title'
 	// 任意のフォントIDを指定する。不正な場合はフォントリストの先頭が適用される
-,	FONTID: 10
+,	FONTID: 0
 	// 文字色。カラーコードで指定することも可能 0xffffff
 ,	COLOR: ColorValue.DEFAULT
 	
