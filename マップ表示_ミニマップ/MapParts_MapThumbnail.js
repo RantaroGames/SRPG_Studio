@@ -43,20 +43,20 @@ ran
 //--------------------------------------
 var MiniMapSetting = {
 	// 幅(環境設定の値[大, 小, 非表示, なし]に対応する配列)
-	  MapWidth: [320, 240, 0, 0]
+	  MapWidth: [240, 200, 0, 0]
 	// 高さ(環境設定の値に対応する配列)
-	, MapHeight: [240, 180, 0, 0]
+	, MapHeight: [180, 150, 0, 0]
 	// アルファ値
-	, MapAlpha: 140
+	, MapAlpha: 160
 	
 	// ユニット位置を示すシンボルの色[自軍, 敵軍, 友軍]
 	, UnitColor: [0x12fcee, 0xef3242, 0x08f511]
 	
 	// ミニマップの下地として描画する四角形設定
 	// 輪郭の設定[color, alpha, size]
-	, StrokeInfo: [0x000033, 255, 4]
+	, StrokeInfo: [0x000033, 255, 2]
 	// 塗りつぶしの設定[color, alpha]
-	, FillColor: [0x000080, 200]
+	, FillColor: [0x000080, 160]
 };
 
 
