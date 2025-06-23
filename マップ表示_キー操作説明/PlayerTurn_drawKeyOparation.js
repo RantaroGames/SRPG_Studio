@@ -2,7 +2,7 @@
 ■ファイル
 PlayerTurn_drawKeyOparation.js
 
-■SRPG Studio対応バージョン:1.234
+■SRPG Studio対応バージョン:1.315
 
 ■プラグインの概要
 マップ上にキー操作の説明を表示する
@@ -12,11 +12,17 @@ PlayerTurn_drawKeyOparation.js
 このファイルをpluginフォルダに入れる
 キー操作の説明を変えたい場合は、KeyOperationTipsTableの各プロパティを変更してください
 
+
 ■作成者
 ran
 
 ■利用規約
 https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78cb3ab12c3/README.md
+
+
+■更新履歴
+2021/12/08 新規作成
+2025/06/23 表示位置を移動させる設定を追加。フォントや文字色を指定し易く修正
 
 */
 
@@ -26,17 +32,32 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 // キー操作の説明文設定
 //----------------------------------------------------------
 var KeyOperationTipsTable = {
-	MapMode_PLAYER: 'Z：移動モード  X：ステータス表示  A,S：ユニット切替',
-	MapMode_ENEMY: 'X：ステータス表示',
-	MapMode_ALLY: 'X：ステータス表示',
-	MapMode_MAP: 'Z：マップコマンド呼出し  X：マーキング ON/OFF',
+	MapMode_PLAYER: 'Z：移動モード X：ステータス表示 A,S：ユニット切替'
+,	MapMode_ENEMY: 'X：ステータス表示'
+,	MapMode_ALLY: 'X：ステータス表示'
+,	MapMode_MAP: 'Z：マップコマンド呼出し X：マーキングON/OFF'
 	
-	AreaMode_PLAYER: 'Z：移動決定  X：キャンセル ↑↓←→： カーソル移動',
-	AreaMode_ENEMY: 'X：キャンセル',
-	AreaMode_ALLY: 'X：キャンセル',
+,	AreaMode_PLAYER: 'Z：移動決定 X：キャンセル ↑↓←→： カーソル移動'
+,	AreaMode_ENEMY: 'X：キャンセル'
+,	AreaMode_ALLY: 'X：キャンセル'
 	
-	MapCommandOpen: 'Z：決定  X：キャンセル  ↑↓：コマンド選択',
-	UnitCommandOpen: 'Z：決定  X：キャンセル  ↑↓：コマンド選択'
+,	MapCommandOpen: 'Z：決定 X：キャンセル ↑↓：コマンド選択'
+,	UnitCommandOpen: 'Z：決定 X：キャンセル ↑↓：コマンド選択'
+	
+	// ture: タイトルUI表示位置を固定 false: カーソル位置に応じて上下に移動
+,	FIXEDPOSITION: false
+
+	// 表示位置の調整用
+,	POSX: 0
+,	POSY: -16
+	
+	// リソース> リソース使用箇所> テキストUI で使用されている見出し(*_title) 内部名を記述する
+,	TEXTUI: 'questreward_title'
+	// 任意のフォントIDを指定する。不正な場合はフォントリストの先頭が適用される
+,	FONTID: 10
+	// 文字色。カラーコードで指定することも可能 0xffffff
+,	COLOR: ColorValue.DEFAULT
+	
 };
 
 //----------------------------------------------------------
@@ -58,25 +79,66 @@ PlayerTurn._drawKeyOperationTips = function() {
 	// textがnullなら処理を終了
 	if (text === null) return;
 	
-	var textui = root.queryTextUI('questreward_title');
+	var textui = root.queryTextUI(KeyOperationTipsTable.TEXTUI);
 	var pic = textui.getUIImage();
-	var color = textui.getColor(); //ColorValue.LIGHT;//0xffffff;
-	var font = textui.getFont();
-//	var font = root.getBaseData().getFontList().getDataFromId(0);//フォントリストからidで直接指定
-//	if (font === null) font = textui.getFont();
+	var color = KeyOperationTipsTable.COLOR;//textui.getColor();
+//	var font = textui.getFont();
+	var font = root.getBaseData().getFontList().getDataFromId(KeyOperationTipsTable.FONTID);
+	if (font === null) font = textui.getFont();
 
 	var count = TitleRenderer.getTitlePartsCount(text, font);
 	var width = TitleRenderer.getTitlePartsWidth() * (count + 2);
-//	var height = TitleRenderer.getTitlePartsHeight();
+	var height = TitleRenderer.getTitlePartsHeight();
+	
 	// 描画開始位置 x,y座標
-	var x = root.getGameAreaWidth() - (width + 2);
-	var y = -16;
+	var x = Fnc_KeyOperationTips._getPositionX(width);
+	var y = Fnc_KeyOperationTips._getPositionY(height);
+	
 	
 	if (pic !== null) {
 		TextRenderer.drawFixedTitleText(x, y, text, color, font, TextFormat.CENTER, pic, count);
 	}
 	else {
 		TextRenderer.drawText(x + 48, y + 24, text, -1, color, font);
+	}
+};
+
+var Fnc_KeyOperationTips = {
+	getMapCursorX: function() {
+		return root.getCurrentSession().getMapCursorX();
+	},
+	
+	getMapCursorY: function() {
+		return root.getCurrentSession().getMapCursorY();
+	},
+	
+	_getPositionX: function(width) {
+		if (KeyOperationTipsTable.FIXEDPOSITION) {
+			return root.getGameAreaWidth() - width + KeyOperationTipsTable.POSX;
+		}
+		
+		var dx = LayoutControl.getRelativeX(10) - 54;
+		
+		return root.getGameAreaWidth() - width - dx;
+	},
+	
+	_getPositionY: function(height) {
+		if (KeyOperationTipsTable.FIXEDPOSITION) {
+			return KeyOperationTipsTable.POSY;
+		}
+		
+		var x = LayoutControl.getPixelX(this.getMapCursorX());
+		var dx = root.getGameAreaWidth() / 2;
+		var y = LayoutControl.getPixelY(this.getMapCursorY());
+		var dy = root.getGameAreaHeight() / 2;
+		var yBase = LayoutControl.getRelativeY(10) - 28;
+		
+		if (x > dx && y < dy) {
+			return root.getGameAreaHeight() - height - KeyOperationTipsTable.POSY;
+		}
+		else {
+			return yBase - height - KeyOperationTipsTable.POSY;
+		}
 	}
 };
 
@@ -163,7 +225,9 @@ PlayerTurn._prepareTurnMemberData = function() {
 
 var _PlayerTurn__moveMapCommand = PlayerTurn._moveMapCommand;
 PlayerTurn._moveMapCommand = function() {
-	this._envdata = f_getEnvdataflag();
+	if (this._mapCommandManager.moveListCommandManager() !== MoveResult.CONTINUE) {
+		this._envdata = f_getEnvdataflag();
+	}
 	
 	return _PlayerTurn__moveMapCommand.call(this);
 };
