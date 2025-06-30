@@ -13,8 +13,11 @@ ver.1.315
 1.このプラグインをpluginフォルダに入れる
 
 2.「アイテム」または、コンフィグで設定する「武器タイプ」のカスタムパラメータに以下のように記述する
+※アイテムに設定されたカスタムパラメータが優先されます
+表示する：true / 表示しない:false
+
 {
-  showItemLostMessage: true
+  itemLostMessage: true
 }
 
 ■作成者
@@ -41,10 +44,13 @@ StringTable.ItemLost = 'が壊れました';
 var ItemLostMessageControl = {
 	showMassageTitle: function(unit, item, generator) {
 		generator.soundPlay(this._getLostSoundHandle(), 1);
+		// messageTitle(message, x, y, isCenterShow)
 		generator.messageTitle(item.getName() + StringTable.ItemLost, 0, 0, true);
 	},
 
-	_isItemLostDisplayable: function(unit, item) {
+	_isDisplayable: function(unit, item) {
+		var showMessage;
+		
 		if (item === null) return false;	
 		
 		// コンフィグで「武器破損時にメッセージを表示する」にチェックが入っていない場合は表示しない
@@ -56,9 +62,16 @@ var ItemLostMessageControl = {
 		// プレイヤーユニット以外は表示しない
 		if (unit.getUnitType() !== UnitType.PLAYER) return false;
 
-		// アイテムまたはアイテムタイプのカスタムパラメータにtrueを設定していれば表示する
-		if (item.custom.showItemLostMessage === true || item.getWeaponType().custom.showItemLostMessage === true) {
-			return true;
+		// アイテムのカスタムパラメータに真偽値を設定していれば、それに従う
+		showMessage = item.custom.itemLostMessage;
+		if (typeof showMessage === 'boolean') {
+			return showMessage;
+		}
+		
+		// アイテムタイプのカスタムパラメータに真偽値を設定していれば、それに従う
+		showMessage = item.getWeaponType().custom.itemLostMessage;
+		if (typeof showMessage === 'boolean') {
+			return showMessage;
 		}
 		
 		return false;
@@ -112,7 +125,7 @@ var ItemBrokenFlowEntry = defineObject(BaseFlowEntry,
 		
 		// itemUseParent.decreaseItem()が実行されてアイテムが破損した時、「破損時アイテム」が設定されていると
 		// itemTargetInfo.itemが置換されてカスタムパラメータが正常に取得できないのでベースデータから取得したアイテムで判定している
-		if (!ItemLostMessageControl._isItemLostDisplayable(unit, baseItem)) {
+		if (!ItemLostMessageControl._isDisplayable(unit, baseItem)) {
 			return EnterResult.NOTENTER;
 		}
 		
@@ -181,7 +194,7 @@ var ItemBrokenFlowEntry_KeyNavigator = defineObject(BaseFlowEntry,
 		
 		// 鍵アイテムをユニットコマンド経由で使用する場合は、KeyTrophyFlowEntryで鍵の耐久を減らす処理が実行されている
 		// 「破損時アイテム」が設定されているとKeyDataのitemが置換されてカスタムパラメータが正常に取得できないのでベースデータから取得したアイテムで判定している
-		if (!ItemLostMessageControl._isItemLostDisplayable(unit, baseItem)) {
+		if (!ItemLostMessageControl._isDisplayable(unit, baseItem)) {
 			return EnterResult.NOTENTER;
 		}
 
