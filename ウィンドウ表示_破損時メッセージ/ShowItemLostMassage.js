@@ -123,8 +123,7 @@ var ItemBrokenFlowEntry = defineObject(BaseFlowEntry,
 		var item = itemTargetInfo.item;
 		var baseItem = root.getBaseData().getItemList().getDataFromId(item.getId());
 		
-		// itemUseParent.decreaseItem()が実行されてアイテムが破損した時、「破損時アイテム」が設定されていると
-		// itemTargetInfo.itemが置換されてカスタムパラメータが正常に取得できないのでベースデータから取得したアイテムで判定している
+		// アイテムが破損した時、「破損時アイテム」が設定されているとitemTargetInfo.itemが置換されてカスタムパラメータが正常に取得できないのでベースデータから取得したアイテムで判定している
 		if (!ItemLostMessageControl._isDisplayable(unit, baseItem)) {
 			return EnterResult.NOTENTER;
 		}
