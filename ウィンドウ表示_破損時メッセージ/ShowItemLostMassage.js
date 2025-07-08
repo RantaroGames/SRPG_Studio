@@ -28,6 +28,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2025/06/30 新規作成
+2025/07/08 スキル使用で鍵開けをした時にエラーが出る不具合を修正
 
 */
 
@@ -189,6 +190,12 @@ var ItemBrokenFlowEntry_KeyNavigator = defineObject(BaseFlowEntry,
 		var generator;
 		var unit = this._keyNavigator.getUnit();
 		var item = this._keyNavigator.getKeyData().item;
+		
+		// スキルで鍵開けをした時はitemはnull
+		if (item === null) {
+			return EnterResult.NOTENTER;
+		}
+		
 		var baseItem = root.getBaseData().getItemList().getDataFromId(item.getId());
 		
 		// 鍵アイテムをユニットコマンド経由で使用する場合は、KeyTrophyFlowEntryで鍵の耐久を減らす処理が実行されている
