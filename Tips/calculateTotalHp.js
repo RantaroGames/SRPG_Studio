@@ -40,6 +40,7 @@ ran
 
 ■更新履歴
 2024/10/14 新規作成
+2025/07/09 レベルアップやドーピングでHPが変化した際に総HPを格納している変数も連動するように修正
 
 */
 
@@ -108,13 +109,17 @@ function Fnc_TotalHP(unitType, isDefault)
 
 ※取得した値を格納する変数を指定するため下記のVariablePage、VariableIdsの数値を設定すること
 
-※自動で計算されるタイミングは以下の６つ
+※自動で計算されるタイミングは以下の9個
 ・戦闘準備シーンが終わってマップが開始した時点で総HPを計算する
 ・戦闘が終了して経験値を得る時
 ・増援が出現した時（イベントで出現させたときは除く）
 ・イベントやアイテムでダメージを与えた時
 ・イベントやアイテムでHPを回復した時
 ・全体回復アイテムでHPを回復した時
+
+・レベルアップでHPが変動した時
+・ドーピングでHPが変動した時
+・イベントコマンド〈パラメータの増減〉でHPが変動した時(※〈ユニットの能力変更〉には未対応)
 
 */
 
@@ -267,6 +272,39 @@ EntireRecoveryItemUse._recoveryHp = function(unit) {
 };
 
 
+// LvUpやdopingでHPの値が変化したら総HPも変動させる
+var _ParameterControl_adjustParameter = ParameterControl.adjustParameter;
+ParameterControl.adjustParameter = function(unit, index, growthValue) {
+	var hp, mhp, curhp, unitType, value;
+
+	if (index === ParamType.MHP) {
+		hp = unit.getHp();
+		mhp = ParamBonus.getMhp(unit);
+		curhp = hp + growthValue;
+		
+		if (curhp > mhp) {
+			// 補正HPが最大値を超過していた
+			value = mhp - hp;
+		}
+		else if (curhp < 1) {
+			// 補正HPが1を下回った
+			value = (hp - 1) * - 1;
+		}
+		else {
+			value = growthValue;
+		}
+		
+		unitType = unit.getUnitType();
+		value += FncVariableControl.getVariable(VariablePage, VariableIds[unitType]);
+
+		FncVariableControl.setVariable(VariablePage, VariableIds[unitType], value);
+	}
+	
+	// 成長した分だけ現在のHPも増やす
+	_ParameterControl_adjustParameter.apply(this, arguments);
+};
+
+
 })();
 
 
@@ -275,6 +313,8 @@ EntireRecoveryItemUse._recoveryHp = function(unit) {
 o-to氏の範囲攻撃アイテムを使用している場合
 EffectRangeDamage.jsファイルにあるOT_ItemEffectRangeUseクラスのオブジェクトを上書きして変数用の数値を設定してください
 （外部から呼び出せない記述なので382行付近の _setDamage の部分を直に上書きするしかない）
+
+※OTスクリプト素材まとめ_20250508以前同梱分
 
 // ↓ここから
 
@@ -322,5 +362,63 @@ EffectRangeDamage.jsファイルにあるOT_ItemEffectRangeUseクラスのオブ
 	},
 
 // ↑ここまで
+
+*/
+
+// OTスクリプト素材まとめ_20250629同梱分を使用している場合はこちらを書き写してください
+
+/*
+
+	_setDamage: function(unit, damage) {
+		var hp, n;
+		
+		if (damage < 0) {
+			var generator = this._dynamicEvent.acquireEventGenerator();
+			generator.hpRecovery( unit, {}, -damage, RecoveryType.SPECIFY, true );
+			this._dynamicEvent.executeDynamicEvent();
+		} else if(damage > 0) {
+			// **減らす前のHPを保存
+			n =  unit.getHp();
+			
+			// ダメージ分だけユニットのhpを減らす
+			hp = unit.getHp() - damage;
+			if (hp <= 0) {
+				// ユニットが不死身である場合は、hpを1でとどめる
+				if (unit.isImmortal()) {
+					unit.setHp(1);
+					
+					// **hpを1残すのでダメージを1減らす
+					n--;
+					
+				} else {
+					unit.setHp(0);
+					// 状態を死亡に変更する
+					//DamageControl.setDeathState(unit);
+				}
+			} else {
+				unit.setHp(hp);
+				
+				// **与えたダメージを保存
+				n = damage;
+			}
+			
+			// ダメージ量を変数に記録する
+			fnc_setVariable(unit, n);
+		}
+		
+		function fnc_setVariable(unit, damagePoint)
+		{
+			var page = 0; // 変数テーブルの番号(左端を0)
+			var ids = [0, 1, 2]; // 変数id[自軍, 敵軍, 友軍]
+			
+			var unitType = unit.getUnitType();
+			var table = root.getMetaSession().getVariableTable(page);
+			var index = table.getVariableIndexFromId(ids[unitType]);
+			var value = table.getVariable(index);
+			
+			value -= damagePoint;
+			table.setVariable(index, value);
+		}
+	},
 
 */
