@@ -33,6 +33,7 @@ ran
 2023/03/08 新規作成
 2023/03/20 表示切替方式を変更(cキーで大→小→非表示→大...)
 2025/01/20 マップカーソルが画面右半分にある時は、ミニマップ表示位置を左側に移動させるようにした
+2025/07/13 環境設定で「なし」を設定している際に不要な処理が入っていた問題を修正
 
 */
 
@@ -108,7 +109,7 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 	},
 	
 	moveMapParts: function() {
-		if (this.getConfigFlagValue() === 2) {
+		if (this.getConfigFlagValue() >= 2) {
 			return MoveResult.END;
 		}
 		
@@ -401,7 +402,7 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 		return MiniMapSetting.UnitColor;
 	},
 	
-	// 環境設定のミニマップ表示形式の値を取得する[大、小、なし]
+	// 環境設定のミニマップ表示形式の値を取得する[大, 小, 非表示, なし]
 	getConfigFlagValue: function() {
 		return ConfigItem.MapParts_MiniMap.getFlagValue();
 	}
