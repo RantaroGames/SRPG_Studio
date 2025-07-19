@@ -23,6 +23,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 ■更新履歴
 2021/12/08 新規作成
 2025/06/23 表示位置を移動させる設定を追加。フォントや文字色を指定し易く修正
+2025/07/19 マップコマンドをキーボードで選択時にカーソル移動が速まる問題を修正
 
 */
 
@@ -225,10 +226,8 @@ PlayerTurn._prepareTurnMemberData = function() {
 
 var _PlayerTurn__moveMapCommand = PlayerTurn._moveMapCommand;
 PlayerTurn._moveMapCommand = function() {
-	if (this._mapCommandManager.moveListCommandManager() !== MoveResult.CONTINUE) {
-		this._envdata = f_getEnvdataflag();
-	}
-	
+	this._envdata = f_getEnvdataflag();
+
 	return _PlayerTurn__moveMapCommand.call(this);
 };
 
