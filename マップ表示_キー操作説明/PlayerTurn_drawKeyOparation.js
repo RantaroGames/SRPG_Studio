@@ -33,10 +33,10 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 // キー操作の説明文設定
 //----------------------------------------------------------
 var KeyOperationTipsTable = {
-	MapMode_PLAYER: 'Z：移動モード X：ステータス表示 A,S：ユニット切替'
-,	MapMode_ENEMY: 'X：ステータス表示'
-,	MapMode_ALLY: 'X：ステータス表示'
-,	MapMode_MAP: 'Z：マップコマンド呼出し X：マーキングON/OFF'
+	MapMode_PLAYER: 'Z：移動 X：ステータス A,S：ユニット切替'
+,	MapMode_ENEMY: 'X：ステータス'
+,	MapMode_ALLY: 'X：ステータス'
+,	MapMode_MAP: 'Z：マップコマンド X：マーキングON/OFF'
 	
 ,	AreaMode_PLAYER: 'Z：移動決定 X：キャンセル ↑↓←→： カーソル移動'
 ,	AreaMode_ENEMY: 'X：キャンセル'
@@ -77,8 +77,8 @@ PlayerTurn._drawKeyOperationTips = function() {
 	if (SceneManager.getScreenCount() > 0) return;
 	
 	var text = this._getExplanationText();
-	// textがnullなら処理を終了
-	if (text === null) return;
+	// textがnullまたは空白なら処理を終了
+	if (text === null || text === '') return;
 	
 	var textui = root.queryTextUI(KeyOperationTipsTable.TEXTUI);
 	var pic = textui.getUIImage();
@@ -88,7 +88,7 @@ PlayerTurn._drawKeyOperationTips = function() {
 	if (font === null) font = textui.getFont();
 
 	var count = TitleRenderer.getTitlePartsCount(text, font);
-	var width = TitleRenderer.getTitlePartsWidth() * (count + 2);
+	var width = TitleRenderer.getTitlePartsWidth() * (count + 1);
 	var height = TitleRenderer.getTitlePartsHeight();
 	
 	// 描画開始位置 x,y座標
@@ -218,17 +218,21 @@ PlayerTurn._prepareTurnMemberData = function() {
 	this._envdata = f_getEnvdataflag();
 };
 
-//var _PlayerTurn__moveMap = PlayerTurn._moveMap;
-//PlayerTurn._moveMap = function() {
-//	this._envdata = f_getEnvdataflag();
-//	return _PlayerTurn__moveMap.call(this);
-//};
-
-var _PlayerTurn__moveMapCommand = PlayerTurn._moveMapCommand;
+/* var _PlayerTurn__moveMapCommand = PlayerTurn._moveMapCommand;
 PlayerTurn._moveMapCommand = function() {
 	this._envdata = f_getEnvdataflag();
 
 	return _PlayerTurn__moveMapCommand.call(this);
+}; */
+
+// コンフィグスクリーンを閉じた時にキー操作説明の表示フラグを再設定する
+var _ConfigScreenLauncher__doEndAction = ConfigScreenLauncher._doEndAction;
+ConfigScreenLauncher._doEndAction = function() {
+	_ConfigScreenLauncher__doEndAction.call(this);
+	
+	if (typeof SceneManager.getActiveScene().getTurnObject !== 'undefined') {
+		SceneManager.getActiveScene().getTurnObject()._envdata = f_getEnvdataflag();
+	}
 };
 
 var _PlayerTurn__drawMap = PlayerTurn._drawMap;
