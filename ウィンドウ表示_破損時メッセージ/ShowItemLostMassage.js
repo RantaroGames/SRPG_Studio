@@ -3,7 +3,7 @@
 ShowItemLostMassage.js
 
 ■SRPG Studio対応バージョン
-ver.1.315
+ver.1.316
 
 ■プラグインの概要
 アイテム破損時にメッセージを表示する処理を追加します。
@@ -29,6 +29,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 ■更新履歴
 2025/06/30 新規作成
 2025/07/08 スキル使用で鍵開けをした時にエラーが出る不具合を修正
+2025/07/25 破損前の元アイテムの取得方法を変更
 
 */
 
@@ -86,13 +87,24 @@ var ItemLostMessageControl = {
 //---------------------------------------------------------------------------
 // 使用したアイテムが破損していたらメッセージを表示する処理を追加する
 //---------------------------------------------------------------------------
+
+// 使用したアイテムのidを保存するメンバ変数
+ItemUseParent._baseItemId = -1;
+
+// アイテム破損時にメッセージを表示する処理に備えて元のアイテムのidを保存しておく
+var _ItemUseParent__prepareMemberData = ItemUseParent._prepareMemberData;
+ItemUseParent._prepareMemberData = function(itemTargetInfo) {
+	_ItemUseParent__prepareMemberData.call(this, itemTargetInfo);
+	
+	this._baseItemId = this._itemTargetInfo.item.getId();
+};
+
 var _ItemUseParent__pushFlowEntries = ItemUseParent._pushFlowEntries;
 ItemUseParent._pushFlowEntries = function(straightFlow) {
 	_ItemUseParent__pushFlowEntries.call(this, straightFlow);
 	
 	straightFlow.pushFlowEntry(ItemBrokenFlowEntry);
 };
-
 	
 var ItemBrokenFlowEntry = defineObject(BaseFlowEntry,
 {	
@@ -122,10 +134,10 @@ var ItemBrokenFlowEntry = defineObject(BaseFlowEntry,
 		var itemTargetInfo = this._itemUseParent.getItemTargetInfo();
 		var unit = itemTargetInfo.unit;
 		var item = itemTargetInfo.item;
-		var baseItem = root.getBaseData().getItemList().getDataFromId(item.getId());
+		var baseItem = root.getBaseData().getItemList().getDataFromId(this._itemUseParent._baseItemId);
 		
-		// アイテムが破損した時、「破損時アイテム」が設定されているとitemTargetInfo.itemが置換されてカスタムパラメータが正常に取得できないのでベースデータから取得したアイテムで判定している
-		// idは「破損時アイテム」ではなく元のアイテムのものが取得できる模様
+		// 先行する処理で既にアイテムが破損している時、「破損時アイテム」が設定されているとitemTargetInfo.itemが置換されてカスタムパラメータが想定通りに取得できない
+		// そのためベースデータから取得したアイテムで判定している
 		if (!ItemLostMessageControl._isDisplayable(unit, baseItem)) {
 			return EnterResult.NOTENTER;
 		}
@@ -188,20 +200,20 @@ var ItemBrokenFlowEntry_KeyNavigator = defineObject(BaseFlowEntry,
 	},
 	
 	_completeMemberData: function(keyNavigator) {
-		var generator;
+		var generator, baseItem;
 		var unit = this._keyNavigator.getUnit();
-		var item = this._keyNavigator.getKeyData().item;
+		var keyData = this._keyNavigator.getKeyData();
+		var item = keyData.item;
 		
-		// スキルで鍵開けをした時はitemはnull
+		// スキルで鍵開けをした時やそもそも鍵が不要な場合itemはnull
 		if (item === null) {
 			return EnterResult.NOTENTER;
 		}
+				
+		// 鍵アイテムをユニットコマンド経由で使用する場合は、先行するKeyTrophyFlowEntryで鍵の耐久を減らす処理が実行されている
+		// 「破損時アイテム」が設定されているとKeyDataのitemが置換されてカスタムパラメータが想定通りに取得できないのでベースデータから取得したアイテムで判定している
+		baseItem = root.getBaseData().getItemList().getDataFromId(keyData.baseId);
 		
-		var baseItem = root.getBaseData().getItemList().getDataFromId(item.getId());
-		
-		// 鍵アイテムをユニットコマンド経由で使用する場合は、KeyTrophyFlowEntryで鍵の耐久を減らす処理が実行されている
-		// 「破損時アイテム」が設定されているとKeyDataのitemが置換されてカスタムパラメータが正常に取得できないのでベースデータから取得したアイテムで判定している
-		// idは「破損時アイテム」ではなく元のアイテムのものが取得できる模様
 		if (!ItemLostMessageControl._isDisplayable(unit, baseItem)) {
 			return EnterResult.NOTENTER;
 		}
@@ -218,5 +230,16 @@ var ItemBrokenFlowEntry_KeyNavigator = defineObject(BaseFlowEntry,
 	}
 }
 );
+
+// 鍵アイテムを使用する際にidを保存しておく
+var _KeyEventChecker_buildKeyDataItem = KeyEventChecker.buildKeyDataItem;
+KeyEventChecker.buildKeyDataItem = function(item, requireFlag) {
+	var keyData = _KeyEventChecker_buildKeyDataItem.call(this, item, requireFlag);
+
+	keyData.baseId = item.getId();
+	
+	return keyData;
+};
+
 
 })();
