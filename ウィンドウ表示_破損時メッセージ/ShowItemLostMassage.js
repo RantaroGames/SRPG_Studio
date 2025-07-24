@@ -125,6 +125,7 @@ var ItemBrokenFlowEntry = defineObject(BaseFlowEntry,
 		var baseItem = root.getBaseData().getItemList().getDataFromId(item.getId());
 		
 		// アイテムが破損した時、「破損時アイテム」が設定されているとitemTargetInfo.itemが置換されてカスタムパラメータが正常に取得できないのでベースデータから取得したアイテムで判定している
+		// idは「破損時アイテム」ではなく元のアイテムのものが取得できる模様
 		if (!ItemLostMessageControl._isDisplayable(unit, baseItem)) {
 			return EnterResult.NOTENTER;
 		}
@@ -200,6 +201,7 @@ var ItemBrokenFlowEntry_KeyNavigator = defineObject(BaseFlowEntry,
 		
 		// 鍵アイテムをユニットコマンド経由で使用する場合は、KeyTrophyFlowEntryで鍵の耐久を減らす処理が実行されている
 		// 「破損時アイテム」が設定されているとKeyDataのitemが置換されてカスタムパラメータが正常に取得できないのでベースデータから取得したアイテムで判定している
+		// idは「破損時アイテム」ではなく元のアイテムのものが取得できる模様
 		if (!ItemLostMessageControl._isDisplayable(unit, baseItem)) {
 			return EnterResult.NOTENTER;
 		}
