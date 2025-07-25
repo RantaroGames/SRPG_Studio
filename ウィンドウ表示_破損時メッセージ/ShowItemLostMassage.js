@@ -235,8 +235,10 @@ var ItemBrokenFlowEntry_KeyNavigator = defineObject(BaseFlowEntry,
 var _KeyEventChecker_buildKeyDataItem = KeyEventChecker.buildKeyDataItem;
 KeyEventChecker.buildKeyDataItem = function(item, requireFlag) {
 	var keyData = _KeyEventChecker_buildKeyDataItem.call(this, item, requireFlag);
-
-	keyData.baseId = item.getId();
+	
+	if (keyData !== null) {
+		keyData.baseId = item.getId();
+	}
 	
 	return keyData;
 };
