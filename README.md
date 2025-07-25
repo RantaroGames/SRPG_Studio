@@ -13,6 +13,7 @@ SRPG Studioで使用できるプラグイン集
 <li>SRPG Studio以外のツールでの使用を禁じます</li>
 <li>SRPG Studioの規約に準じます (<a href="http://srpgstudio.com/guide/rules.html" rel="nofollow">http://srpgstudio.com/guide/rules.html</a>)</li>
 <li>改変可、再配布可、転載可、クレジット記載不要</li>
+<li>改変したプラグインの配布は、改変者の責任の下で行ってください</li>
 <li>プラグイン(改変したものを含む)を有償で配布することは禁じます</li>
 </ui><br>
 ■免責<br>
