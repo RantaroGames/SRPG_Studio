@@ -28,7 +28,7 @@ ran
 
 ■更新履歴
 2024/11/26 新規作成
-
+2025/07/27 ターン切り替わりに枠の前のターンの状態が残っていた問題を修正
 
 */
 
@@ -115,7 +115,7 @@ var OrderNumberDisplay = defineObject(BaseObject,
 		
 		for (i = 0; i < count; i++) {
 			unit = list.getData(i);
-			
+
 			if (unit.isInvisible() || unit.getSortieState() !== SortieType.SORTIE) continue;
 
 			arrayX.push(unit.getMapX());
@@ -124,6 +124,7 @@ var OrderNumberDisplay = defineObject(BaseObject,
 	},
 	
 	drawOrderNumber: function() {
+		if (this._orderNumber === null) return;
 		if (this._isVisible === false) return;
 		if (this._isDisplayable() === false) return;
 		
@@ -184,7 +185,7 @@ var OrderNumberDisplay = defineObject(BaseObject,
 		if (baseScene !== SceneType.FREE && baseScene !== SceneType.BATTLESETUP) return false;
 	
 		// イベントが実行中の時は描画しない
-		if (root.isEventSceneActived() === true) return;
+		if (root.isEventSceneActived() === true) return false;
 		
 		// プレイヤーターンのみ表示する
 		if (session.getTurnType() !== TurnType.PLAYER) return false;
@@ -232,9 +233,9 @@ MapLayer.moveMapLayer = function() {
 // ターン切り替わり時にリストを取得する
 var _PlayerTurn_openTurnCycle = PlayerTurn.openTurnCycle;
 PlayerTurn.openTurnCycle = function () {
-	_PlayerTurn_openTurnCycle.call(this);
-
 	MapLayer._orderNumber.updateOrderNumber();
+
+	_PlayerTurn_openTurnCycle.call(this);
 };
 
 // 自動イベントの終了時にリストを更新する
@@ -243,6 +244,14 @@ PlayerTurn._doEventEndAction = function () {
 	_PlayerTurn_doEventEndAction.call(this);
 
 	MapLayer._orderNumber.updateOrderNumber();
+};
+
+// エネミーターン終了時にリストを更新
+var _EnemyTurn__moveEndEnemyTurn = EnemyTurn._moveEndEnemyTurn;
+EnemyTurn._moveEndEnemyTurn = function() {
+	MapLayer._orderNumber.updateOrderNumber();
+	
+	return _EnemyTurn__moveEndEnemyTurn.call(this);
 };
 
 var _MapEdit__moveCursorMove = MapEdit._moveCursorMove;
