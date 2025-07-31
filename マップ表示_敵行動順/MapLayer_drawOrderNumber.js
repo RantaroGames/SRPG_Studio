@@ -7,7 +7,7 @@ ver.1.316
 
 ■プラグインの概要
 敵ユニット(と同盟ユニット)が敵ターン時に行動する順番を表示します。
-エディタの「行動順の表示」と同様の機能をゲーム中にも利用できるようになります。
+エディタの「行動順の表示」に似た機能をゲーム中で利用できるようになります。
 
 環境設定で該当項目をオンにしてマップ攻略中にshiftキー（game.iniでOPTION2に割り当てたキー）を押下すると順番が表示されます。
 行動順はプレイヤーターンのみ表示されます。
@@ -47,15 +47,15 @@ var OrderNumber = {
   , NumberColor: 0x0000ff
   
     // 数値のフォントid 参考フォント：BIZ UDPゴシック(サイズ9)
-  , FontId: 0
+  , FONTID: 0
   
 	// 枠のサイズ
-  , width: 16
-  , height: 12
+  , WIDTH: 16
+  , HEIGHT: 12
   
 	// 枠の描画座標調整
-  , dx: 4
-  , dy: 8  
+  , POSX: 4
+  , POSY: 8
 };
 
 
@@ -140,9 +140,9 @@ var OrderNumberDisplay = defineObject(BaseObject,
 		var canvas = graphicsManager.getCanvas();
 		var radiusX = 2;
 		var radiusY = 2;
-		var font = this.getOptionalFont(OrderNumber.FontId);
-		var fWidth = OrderNumber.width;
-		var fHeight = OrderNumber.height;
+		var font = this.getOptionalFont(OrderNumber.FONTID);
+		var fWidth = OrderNumber.WIDTH;
+		var fHeight = OrderNumber.HEIGHT;
 		var count = arrayX.length;
 	
 		for (i = 0; i < count; i++) {
@@ -156,9 +156,9 @@ var OrderNumberDisplay = defineObject(BaseObject,
 			// x,yをpixel座標に変換して現在スクロールしている画面に収まっているか
 			if (!MapView.isVisible(x, y)) continue;
 			
-			// 行動順を表示する枠の描画原点(dx, dyの値で調整)
-			x = (x * width) - root.getCurrentSession().getScrollPixelX() - OrderNumber.dx;
-			y = (y * height) - root.getCurrentSession().getScrollPixelY() - OrderNumber.dy;
+			// 行動順を表示する枠の描画原点(POSX, POSYの値で調整)
+			x = (x * width) - root.getCurrentSession().getScrollPixelX() - OrderNumber.POSX;
+			y = (y * height) - root.getCurrentSession().getScrollPixelY() - OrderNumber.POSY;
 
 			// 番号100以上の場合は枠の幅を広げる(あるいは最初から幅を広げておけば下の一行は不要)
 			if (i+1 > 99) fWidth = 20;
