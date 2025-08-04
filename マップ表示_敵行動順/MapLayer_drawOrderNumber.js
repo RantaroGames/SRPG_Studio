@@ -43,10 +43,10 @@ var OrderNumber = {
 	EnemyColor: 0xFFD5EC
 	// 枠の色（同盟軍）
   , AllyColor: 0x93FFAB
-    // 数値の色
+	// 数値の色
   , NumberColor: 0x0000ff
   
-    // 数値のフォントid 参考フォント：BIZ UDPゴシック(サイズ9)
+	// 数値のフォントid 参考フォント：BIZ UDPゴシック(サイズ9)
   , FONTID: 0
   
 	// 枠のサイズ
