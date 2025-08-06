@@ -56,7 +56,7 @@ var MapSymbol = {
 ,	LARGESIZE_H: 6
 
 	// シンボルに輪郭を描画する true / しない false
-,	STROKEDRAW: true
+,	STROKEDRAW: false
 	// 輪郭の色の配列[自軍カラー, 敵軍カラー, 同盟軍カラー]
 ,	STROKECOLOR_ARRAY: [0x2743d2, 0xe22b30, 0xb4e04b]
 	// 輪郭の色のアルファ値(0-255の数値)
