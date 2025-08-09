@@ -25,6 +25,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 2022/07/11 新規作成
 2022/07/17 レベルキャップの上限値を表示するウィンドウを追加
 2022/07/18 現在レベルが(上限-1)の時は、レベルアップまでの不足分のみ経験値配分可能なように調整
+2025/08/09 上限値を表示するウィンドウがレベルアップ時のステータスウインドウの下に表示されるように変更
 
 */
 
@@ -108,8 +109,6 @@ ExperienceDistributionScreen._prepareScreenMemberData = function(screenParam) {
 
 var _ExperienceDistributionScreen_drawScreenCycle = ExperienceDistributionScreen.drawScreenCycle;
 ExperienceDistributionScreen.drawScreenCycle = function() {
-	_ExperienceDistributionScreen_drawScreenCycle.call(this);
-	
 	var width = this._levelupUnitWindow.getWindowWidth() + this._itemUserWindow.getWindowWidth();
 	var height = this._itemUserWindow.getWindowHeight();
 	var x = LayoutControl.getCenterX(-1, width);
@@ -118,6 +117,8 @@ ExperienceDistributionScreen.drawScreenCycle = function() {
 	var xInfo = (x + width) - this._bonusPointWindow.getWindowWidth() - this._levelCaptWindow.getWindowWidth();
 	var yInfo = y - this._levelCaptWindow.getWindowHeight();
 	this._levelCaptWindow.drawWindow(xInfo, yInfo);
+	
+	_ExperienceDistributionScreen_drawScreenCycle.call(this);
 };
 
 var LevelCapWindow = defineObject(BaseWindow,
@@ -137,7 +138,7 @@ var LevelCapWindow = defineObject(BaseWindow,
 		
 		TextRenderer.drawKeywordText(x, y, '(下級)', -1, color, font);
 		NumberRenderer.drawNumber(x + 60, y, lvcapL);
-		TextRenderer.drawKeywordText(x　+ 90, y, '(上級)', -1, color, font);
+		TextRenderer.drawKeywordText(x + 90, y, '(上級)', -1, color, font);
 		NumberRenderer.drawNumber(x + 150, y, lvcapH);
 	},
 	
