@@ -37,9 +37,9 @@ var MapSymbol = {
 	FILLCOLOR_ARRAY: [0x5732ec, 0xf0312d, 0x31e640]
 	// 塗り潰し色のアルファ値(0-255の数値)
 ,	FILLCOLOR_ALHPA: 140
-	// 楕円の長軸
+	// 楕円の横軸
 ,	WIDTH: 32
-	// 楕円の短軸
+	// 楕円の縦軸
 ,	HEIGHT: 18
 	// 描画位置の調整
 ,	POS_DX: 0
