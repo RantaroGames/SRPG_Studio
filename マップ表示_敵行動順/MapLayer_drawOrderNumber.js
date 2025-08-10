@@ -183,12 +183,12 @@ var OrderNumberDisplay = defineObject(BaseObject,
 		// 戦闘マップ中または戦闘準備中のみ取得可能
 		var baseScene = root.getBaseScene();
 		if (baseScene !== SceneType.FREE && baseScene !== SceneType.BATTLESETUP) return false;
-	
-		// イベントが実行中の時は描画しない
-		if (root.isEventSceneActived() === true) return false;
 		
 		// プレイヤーターンのみ表示する
 		if (session.getTurnType() !== TurnType.PLAYER) return false;
+		
+		// イベントが実行中の時は描画しない
+		if (root.isEventSceneActived() === true) return false;
 		
 		return true;
 },
