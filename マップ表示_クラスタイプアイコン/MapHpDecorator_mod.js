@@ -75,7 +75,7 @@ var MapHpDecoration = {
 
 	// バーを角丸四角で描画する: true / 従来通り: false
 ,	USE_ROUNDEDRECTANGLE: false
-	// 角を丸める際の半径（X軸、Y軸)
+	// 角を丸める際の半径（X軸、Y軸。1以上バーの幅（高さ）の半分までの数値)
 ,	RADIUSX: 0
 ,	RADIUSY: 0
 
