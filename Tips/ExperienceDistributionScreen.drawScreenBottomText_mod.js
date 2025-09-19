@@ -3,7 +3,6 @@
 ExperienceDistributionScreen.drawScreenBottomText = function(textui) {
 	var mode = this.getCycleMode();
 	var text = '';
-	var rate;
 	
 	if (this._itemUserWindow.getSkillInteraction().isInteraction()) {
 		// スキル選択時はスキルの説明が表示される
@@ -16,13 +15,12 @@ ExperienceDistributionScreen.drawScreenBottomText = function(textui) {
 	else if (mode === ExperienceDistributionScreenMode.INPUT) {
 		// 経験値増減時のヘルプ
 
-		// コンフィグ2の経験値配分レートの値を取得する
-		rate = this._bonusInputWindow._getRate();
-		text = '(1exp = ' + rate + 'BP) ';
-		text += '↑↓：経験値増減 ｚ：決定 ｘ:キャンセル';
+		// ↓2行のコメントを外すとコンフィグ2の経験値配分レートの値を取得してヘルプに表示する（↓で1行にまとめた箇所をコメントアウトすること）
+//		var rate = this._bonusInputWindow._getRate();
+//		text = '(1exp = ' + rate + 'BP) ↑↓：経験値増減 ｚ：決定 ｘ:キャンセル';
 
-		// レートも直書きで記述するなら、こんな感じで (上3行をコメントアウトして下1行のコメントを外す)
-//		text = '（1exp = 10BP） ↑↓：経験値増減 ｚ：決定 ｘ:キャンセル'
+		// レートも直書きで記述するなら、こんな感じで
+		text = '（1exp = 10BP） ↑↓：経験値増減 ｚ：決定 ｘ:キャンセル'
 		
 		TextRenderer.drawScreenBottomText(text, textui);
 	}
@@ -33,6 +31,9 @@ ExperienceDistributionScreen.drawScreenBottomText = function(textui) {
 })();
 
 /*
+
+20、23行目のtext=の文字列を変更する
+（※5行目、9行目のtext部分は、いじらない様に）
 
 名前未定（）さんの「ヘルプ文字二段.js」を導入している場合
 \(バックスラッシュ）は、\\のように2つ書くこと
