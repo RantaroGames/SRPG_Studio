@@ -21,8 +21,6 @@ ExperienceDistributionScreen.drawScreenBottomText = function(textui) {
 
 		// レートも直書きで記述するなら、こんな感じで
 		text = '（1exp = 10BP） ↑↓：経験値増減 ｚ：決定 ｘ:キャンセル'
-		
-		TextRenderer.drawScreenBottomText(text, textui);
 	}
 	
 	TextRenderer.drawScreenBottomText(text, textui);
