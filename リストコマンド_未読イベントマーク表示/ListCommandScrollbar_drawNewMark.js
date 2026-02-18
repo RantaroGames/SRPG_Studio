@@ -2,7 +2,7 @@
 ■ファイル
 ListCommandScrollbar_drawNewMark.js
 
-■SRPG Studio対応バージョン:1.300
+■SRPG Studio対応バージョン:1.319
 
 ■プラグインの概要
 未読イベントがある場合、リストコマンドにNEWマークを表示します
@@ -18,20 +18,21 @@ ListCommandScrollbar_drawNewMark.js
 
 2.本プラグイン内の設定項目を設定する
 
-※競合に関する注意点
-本プラグインでは、一部でListCommandScrollbarを独自のオブジェクトに置き換えています
-
-SetupCommand.openListCommandManager
-MapCommand.openListCommandManager
-RestCommand.openListCommandManager 
-
-以上の３つを変更しているプラグインと競合する恐れがあります
-リネームして読み込む順番を変えるか、マージして対応してください
-
 ※同一idマップを繰り返し利用する場合
 本プラグインでは、マップのコミュニケーションイベントの未読判定をマップ毎に初期化します
 そのためクエスト等で同一idのマップを繰り返し攻略できる場合
 既に実行したイベントであってもマップに入るたびに（マップ共有イベントを除いて）、未読扱いとなりNewマークが表示されます
+
+・機能追加（2026/02/17）
+情報収集で繰り返し実行できるイベントを1度でも実行した際に表示色を変更する
+（実行済みで再度実行不可のイベントは、通常の処理で灰色で表示されます）
+設定項目のViewedEventNameColorで色を指定できます。
+
+・Tips
+種別「会話」や「トロフィー」イベントを繰り返し閲覧できるようにしたい
+コミュニケーションイベントでは、種別「情報」以外のイベントは一度しか実行できません（<イベントの状態変更>で実行済み解除できない）
+その代わり、種別を「情報」にして（イベント名を右クリック）詳細情報からアイコンを変更することで可能になります。
+その際、アイテムを再度獲得出来たり、能力値が変更されたりしないようグローバルスイッチや変数を利用してフラグ管理する必要があります。
 
 ■作成者
 ran
@@ -41,262 +42,42 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2024/08/17 新規作成
-2025/01/04 拠点でコマンドリスト更新時にNew!表示が残ってしまっていた問題を修正
+2026/02/17 情報収集で繰り返し実行できるイベント（情報タイプ）を1度でも実行したら名前の色を変更できるようにした
 
 */
 
-
 (function() {
-	
+
 //-----------------------------
 // 設定項目
 //-----------------------------
-// Newマークをtext表示する(true) / icon表示（false）
-var isMarkText = true;
-
-// 表示テキスト
-var NewMarkText = 'New!';
-
-// 表示icon text表示採用なら設定不要 
-// {isRuntime: true(ランタイム) / false(オリジナル), id: アイコンリソースid, xSrc: アイコンの位置x座標（左端を0）, ySrc: y座標(上端を0）}
-var NewMarkIcon = {isRuntime: true, id: 0, xSrc: 0, ySrc: 0};
-
-// Newマークを表示するコマンド名
-// ゲーム内で表示されるテキストではなく、コマンドレイアウトで設定した名前を指定する \（バックスラッシュ）を含む場合は \\文字 のように\を一つ追加して記述する
-var CommandName = {
-	// 戦闘準備のコミュニケーションイベント
-	CM_SETUP: '情報収集',
-	// マップコマンドのコミュニケーションイベント
-	CM_MAP: '情報収集',
-	// 拠点のコミュニケーションイベント
-	CM_REST: '情報収集',
-	// 拠点の会話イベント
-	TK_REST: '会話選択'
-};
-
-//-----------------------------
-
-// マップ共通イベントで追加されたコミュニケーションイベントのidがマップのCMイベントidと被らないようにする
-var CommonEventBaseId = 1000;
-
-// ListCommandScrollbarを継承させたオブジェクト
-var ListCommandScrollbar_drawNewMark = defineObject(ListCommandScrollbar,
-{
-	// 未読イベントが存在している場合、該当コマンドのindexを記録するプロパティ
-	_isNewMarkIndex_CM: -1,
-	_isNewMarkIndex_TK: -1,
-	
-	drawScrollContent: function(x, y, object, isSelect, index) {
-		ListCommandScrollbar.drawScrollContent.apply(this, arguments);
-		
-		if (this._isNewMarkIndex_CM === index) {
-			this._drawNewMark(x, y);
-		}
-		else if (this._isNewMarkIndex_TK === index) {
-			this._drawNewMark(x, y);
-		}
+var NewMarkConfig = {
+	// Newマークをtext表示する(true) / icon表示（false）
+	isMarkText: true,
+	text: 'New!',
+	// 表示icon text表示採用なら設定不要 
+	// {isRuntime: true(ランタイム) / false(オリジナル), id: アイコンリソースid, xSrc: アイコンの位置x座標（左端を0）, ySrc: y座標(上端を0）}
+	icon: {isRuntime: true, id: 0, xSrc: 0, ySrc: 0},
+	// 描画位置補正
+	dx: 20,
+	dy: 10,
+	// コマンド名定義
+	// ゲーム内で表示されるテキストではなくコマンドレイアウトで設定した名前を指定する \（バックスラッシュ）を含む場合は \\文字 のように\を一つ追加して記述する
+	commandNames: {
+		CM_SETUP: '情報収集',
+		CM_MAP: '情報収集',
+		CM_REST: '情報収集',
+		TK_REST: '会話選択'
 	},
-
-	// NEWマークを表示する関数
-	_drawNewMark: function(x, y) {
-		var textui = this.getParentInstance().getCommandTextUI();
-		var color = ColorValue.KEYWORD;
-		var font = textui.getFont();
-		var handle = root.createResourceHandle(NewMarkIcon.isRuntime, NewMarkIcon.id, 0, NewMarkIcon.xSrc, NewMarkIcon.ySrc);
-		var dx = 20; // x座標補正
-		var dy = 10; // y座標補正
-		
-		if (isMarkText === false && handle !== null) {
-			GraphicsRenderer.drawImage(x + dx, y + dy, handle, GraphicsType.ICON);
-		}
-		else {
-			TextRenderer.drawText(x + dx, y + dy, NewMarkText, -1, color, font);
-		}
-	}
-}
-);
-
-// ListCommandScrollbarをNewMark表示用のオブジェクトに置き換える
-
-//var _SetupCommand_openListCommandManager = SetupCommand.openListCommandManager;
-SetupCommand.openListCommandManager = function() {
-//	_SetupCommand_openListCommandManager.call(this);
-	this._commandScrollbar = createScrollbarObject(ListCommandScrollbar_drawNewMark, this);
-	this._commandScrollbar.setActive(true);
-	this.rebuildCommand();
-	this._playCommandOpenSound();
-	this.changeCycleMode(ListCommandManagerMode.TITLE);
+	// 既読イベントの色
+	viewedColor: 0x99ccff,
+	// マップ共通イベントのオフセットID
+	commonEventBaseId: 1000
 };
 
-//var _MapCommand_openListCommandManager = MapCommand.openListCommandManager;
-MapCommand.openListCommandManager = function() {
-//	_MapCommand_openListCommandManager.call(this);
-	this._commandScrollbar = createScrollbarObject(ListCommandScrollbar_drawNewMark, this);
-	this._commandScrollbar.setActive(true);
-	this.rebuildCommand();
-	this._playCommandOpenSound();
-	this.changeCycleMode(ListCommandManagerMode.TITLE);
-};
-
-//var _RestCommand_openListCommandManager = RestCommand.openListCommandManager;
-RestCommand.openListCommandManager = function() {
-//	_RestCommand_openListCommandManager.call(this);
-	this._commandScrollbar = createScrollbarObject(ListCommandScrollbar_drawNewMark, this);
-	this._commandScrollbar.setActive(true);
-	this.rebuildCommand();
-	this._playCommandOpenSound();
-	this.changeCycleMode(ListCommandManagerMode.TITLE);
-};
-
-
-// BattleSetupSceneに入った(新たにマップを開いた)時に情報イベントの閲覧状況を初期化する
-var _BattleSetupScene_setSceneData = BattleSetupScene.setSceneData;
-	BattleSetupScene.setSceneData = function() {
-	_BattleSetupScene_setSceneData.call(this);
-	
-	var mapId = root.getCurrentSession().getCurrentMapInfo().getId();
-	var global = root.getMetaSession().global;
-	
-	if (Object.prototype.toString.call(global.ReadEvent) !== '[object Array]') {
-		ReadEventCheck.initGlobalParameter();
-	}
-		
-	// グローバルパラメータのmapIdと現在マップのidが異なっているということは新しいマップに入ったと看做せるので閲覧状況を初期化して良い
-	if (global.CurrentMapId !== mapId) {
-		global.CurrentMapId = mapId;
-		global.ReadEvent[ReadEventType.CM_MAP] = ReadEventCheck.cutEventId(global.ReadEvent[ReadEventType.CM_MAP]);
-	}
-};
-
-
-// 戦闘準備画面のコミュニケーションイベントで未読があればコマンドリストのindexを記録しておく
-var _SetupCommand_rebuildCommand = SetupCommand.rebuildCommand;
-SetupCommand.rebuildCommand = function() {
-	_SetupCommand_rebuildCommand.call(this);
-	
-	var object, index, commandName;
-	var count = this._commandScrollbar.getObjectCount();
-	
-	this._commandScrollbar._isNewMarkIndex_CM = -1;
-	
-	for (index = 0; index < count; index++) {
-		object = this._commandScrollbar.getObjectFromIndex(index);
-		commandName = object.getCommandName();
-		
-		if (commandName === CommandName.CM_SETUP) {
-			if (ReadEventCheck.isUnReadEvent(EventType.COMMUNICATION) === true) {
-				this._commandScrollbar._isNewMarkIndex_CM = index;
-			}
-			else {
-				this._commandScrollbar._isNewMarkIndex_CM = -1;
-			}
-			return;
-		}
-	}
-};
-
-// マップコマンドのコミュニケーションイベントで未読があればコマンドリストのindexを記録しておく
-var _MapCommand_rebuildCommand = MapCommand.rebuildCommand;
-MapCommand.rebuildCommand = function() {
-	_MapCommand_rebuildCommand.call(this);
-	
-	var object, index, commandName;
-	var count = this._commandScrollbar.getObjectCount();
-	
-	this._commandScrollbar._isNewMarkIndex_CM = -1;
-	
-	for (index = 0; index < count; index++) {
-		object = this._commandScrollbar.getObjectFromIndex(index);
-		commandName = object.getCommandName();
-		
-		if (commandName === CommandName.CM_MAP) {
-			if (ReadEventCheck.isUnReadEvent(EventType.COMMUNICATION) === true) {
-				this._commandScrollbar._isNewMarkIndex_CM = index;
-			}
-			else {
-				this._commandScrollbar._isNewMarkIndex_CM = -1;
-			}
-			return;
-		}
-	}
-};
-
-// 拠点のCM/TKイベントで未読があればコマンドリストのindexを記録しておく
-var _RestCommand_rebuildCommand = RestCommand.rebuildCommand;
-RestCommand.rebuildCommand = function() {
-	_RestCommand_rebuildCommand.call(this);
-	
-	var object, index, commandName;
-	var count = this._commandScrollbar.getObjectCount();
-	
-	this._commandScrollbar._isNewMarkIndex_CM = -1;
-	this._commandScrollbar._isNewMarkIndex_TK = -1;
-	
-	for (index = 0; index < count; index++) {
-		object = this._commandScrollbar.getObjectFromIndex(index);
-		commandName = object.getCommandName();
-		
-		if (commandName === CommandName.CM_REST) {
-			if (ReadEventCheck.isUnReadEvent(EventType.COMMUNICATION) === true) {
-				this._commandScrollbar._isNewMarkIndex_CM = index;
-			}
-			else {
-				this._commandScrollbar._isNewMarkIndex_CM = -1;
-			}
-		}
-		else if (commandName === CommandName.TK_REST) {
-			if (ReadEventCheck.isUnReadEvent(EventType.TALK) === true) {
-				this._commandScrollbar._isNewMarkIndex_TK = index;
-			}
-			else {
-				this._commandScrollbar._isNewMarkIndex_TK = -1;
-			}
-		}
-	}
-};
-
-
-// 一度でもイベントを実行させた場合、グローバルパラメータにイベントのidを記録する
-var _CommunicationScreen__startEvent = CommunicationScreen._startEvent;
-CommunicationScreen._startEvent = function() {
-	var event, eventId;
-	var entry = this._scrollbar.getObject();
-
-	if (entry !== null) {
-		// entry.eventには実行可能状態のイベントが格納されている
-		event = entry.event;
-		
-		// マップ共通イベントはid+1000
-		if (event.getCommonEventInfo() !== null) {
-			eventId = event.getId() + CommonEventBaseId;
-		}
-		else {
-			eventId = event.getId();
-		}
-			
-		ReadEventCheck._setReadEventId(eventId, EventType.COMMUNICATION);
-	}
-	
-	_CommunicationScreen__startEvent.call(this);
-};	
-
-var _ImageTalkScreen__startTalkEvent = ImageTalkScreen._startTalkEvent;
-ImageTalkScreen._startTalkEvent = function() {
-	var event, eventId;
-	var entry = this._imageTalkWindow.getChildScrollbar().getObject();
-	
-	if (entry !== null) {
-		event = entry.event;
-		
-		// 拠点の会話イベントはマップ共通イベントを考慮しなくてよいのでidを加工しない
-		eventId = event.getId();
-	
-		ReadEventCheck._setReadEventId(eventId, EventType.TALK);
-	}
-	
-	_ImageTalkScreen__startTalkEvent.call(this);
-};
-
+//----------------------------------------------------------
+// ReadEventCheck (内部ロジック管理)
+//----------------------------------------------------------
 var ReadEventType = {
 	CM_MAP: 0,
 	CM_REST: 1,
@@ -304,10 +85,17 @@ var ReadEventType = {
 };
 
 var ReadEventCheck = {
-	// グローバルパラメータを初期化する
+	// グローバルパラメータの取得と初期化
+	getGlobalParameter: function() {
+		var meta = root.getMetaSession();
+		if (typeof meta.global.ReadEvent !== 'object' || meta.global.ReadEvent === null) {
+			this.initGlobalParameter();
+		}
+		return meta.global.ReadEvent;
+	},
+
 	initGlobalParameter: function() {
 		var global = root.getMetaSession().global;
-		
 		global.ReadEvent = [];
 		global.ReadEvent[ReadEventType.CM_MAP] = [];
 		global.ReadEvent[ReadEventType.CM_REST] = [];
@@ -315,132 +103,193 @@ var ReadEventCheck = {
 		global.CurrentMapId = -1;
 	},
 
-	// グローバルパラメータに記録している既読イベント情報を取得する
-	getGlobalParameter: function() {
-		if (Object.prototype.toString.call(root.getMetaSession().global.ReadEvent) !== '[object Array]') {
-			this.initGlobalParameter();
+	// イベントオブジェクトから内部管理用IDを取得
+	getInternalId: function(event) {
+		var id = event.getId();
+		if (event.getCommonEventInfo() !== null) {
+			id += NewMarkConfig.commonEventBaseId;
 		}
-		
-		return root.getMetaSession().global.ReadEvent;
+		return id;
 	},
-	
-	_putlog: function() {
-		var readEvent = this.getGlobalParameter();
-		
-		root.log('CM_MAP ' + readEvent[ReadEventType.CM_MAP]);
-		root.log('CM_REST ' + readEvent[ReadEventType.CM_REST]);
-		root.log('TK_REST ' + readEvent[ReadEventType.TK_REST]);
-	},
-	
-	// 未読イベント＝グローバルパラメータにidが記録されていない かつ 実行済みでない かつ 実行可能なイベント）
-	// コマンドリストのrebuildCommand()実行時に判定する
-	isUnReadEvent: function(eventType) {
-		var session = root.getCurrentSession();
-		if (session === null) return false;
 
-		var arr, i, count, event, id;
-		
+	// 既読判定の核となるロジック
+	_getStorageType: function(eventType) {
 		if (eventType === EventType.COMMUNICATION) {
-			arr = EventCommonArray.createArray(session.getCommunicationEventList(), EventType.COMMUNICATION);
+			return root.getBaseScene() === SceneType.REST ? ReadEventType.CM_REST : ReadEventType.CM_MAP;
+		} else if (eventType === EventType.TALK) {
+			return ReadEventType.TK_REST;
 		}
-		else if (eventType === EventType.TALK) {
-			arr = EventCommonArray.createArray(session.getTalkEventList(), EventType.TALK);
-		}
-		else {
-			root.log('不正なeventType');
-			return false;
-		}
+		return -1;
+	},
+
+	isRead: function(eventId, eventType) {
+		var type = this._getStorageType(eventType);
+		var data = this.getGlobalParameter();
+		if (type === -1 || !data[type]) return false;
 		
-		count = arr.length;
-		for (i = 0; i < count; i++) {
+		return data[type].indexOf(eventId) !== -1;
+	},
+
+	setRead: function(eventId, eventType) {
+		var type = this._getStorageType(eventType);
+		var data = this.getGlobalParameter();
+		if (type !== -1 && !this.isRead(eventId, eventType)) {
+			data[type].push(eventId);
+		}
+	},
+
+	// 未読の実行可能イベントがあるか確認
+	hasUnreadEvent: function(eventType) {
+		var session = root.getCurrentSession();
+		if (!session) return false;
+
+		var list = (eventType === EventType.COMMUNICATION) ? session.getCommunicationEventList() : session.getTalkEventList();
+		var arr = EventCommonArray.createArray(list, eventType);
+		var i, event, id;
+		
+		for (i = 0; i < arr.length; i++) {
 			event = arr[i];
-			id = event.getId();
-			// マップ共通イベントならid+1000
-			if (event.getCommonEventInfo() !== null) {
-				id += CommonEventBaseId;
-			}
+			id = this.getInternalId(event);
 			
-			if (this._isReadEvent(id, eventType) === false) {
+			if (!this.isRead(id, eventType)) {
+				// 繰り返し可能かつ実行条件を満たしている
 				if (event.getExecutedMark() === EventExecutedType.FREE && event.isEvent()) {
 					return true;
 				}
 			}
 		}
-		
 		return false;
-	},
+	}
+};
+
+//----------------------------------------------------------
+// ListCommandScrollbar クラス拡張
+//----------------------------------------------------------
+ListCommandScrollbar._isNewMarkIndex_CM = -1;
+ListCommandScrollbar._isNewMarkIndex_TK = -1;
+
+var _ListCommandScrollbar_drawScrollContent = ListCommandScrollbar.drawScrollContent;
+ListCommandScrollbar.drawScrollContent = function(x, y, object, isSelect, index) {
+	_ListCommandScrollbar_drawScrollContent.apply(this, arguments);
 	
-	// 既読イベントのidをグローバルパラメータに記録する
-	_setReadEventId: function(eventId, eventType) {
-		var readEvent = this.getGlobalParameter();
+	if (this._isNewMarkIndex_CM === index || this._isNewMarkIndex_TK === index) {
+		this._drawNewMark(x, y);
+	}
+};
+
+ListCommandScrollbar._drawNewMark = function(x, y) {
+	var textui = this.getParentInstance().getCommandTextUI();
+	var color = ColorValue.KEYWORD;
+	var font = textui.getFont();
+	var dx = NewMarkConfig.dx;
+	var dy = NewMarkConfig.dy;
 		
-		if (eventType === EventType.COMMUNICATION) {
-			if (root.getBaseScene() === SceneType.REST) {
-				if (this._isReadEvent(eventId, eventType) === false) {
-					readEvent[ReadEventType.CM_REST].push(eventId);
-				}
-			}
-			else {
-				if (this._isReadEvent(eventId, eventType) === false) {
-					readEvent[ReadEventType.CM_MAP].push(eventId);
-				}
-			}
-		}
-		else if (eventType === EventType.TALK) {
-			if (this._isReadEvent(eventId, eventType) === false) {
-				readEvent[ReadEventType.TK_REST].push(eventId);
-			}
-		}
-		else {
-			root.log('不正なeventType');
+	if (!NewMarkConfig.isMarkText) {
+		var icon = NewMarkConfig.icon;
+		var handle = root.createResourceHandle(icon.isRuntime, icon.id, 0, icon.xSrc, icon.ySrc);
+		if (handle) {
+			GraphicsRenderer.drawImage(x + dx, y + dy, handle, GraphicsType.ICON);
 			return;
 		}
-	},
-	
-	// 既読イベントのidが、グローバルパラメータに記録されているならtrueを返す
-	_isReadEvent: function(eventId, eventType) {
-		var readEvent = this.getGlobalParameter();
-		
-		if (eventType === EventType.COMMUNICATION) {
-			if (root.getBaseScene() === SceneType.REST) {
-				return readEvent[ReadEventType.CM_REST].indexOf(eventId) !== -1;
-			}
-			else {
-				return readEvent[ReadEventType.CM_MAP].indexOf(eventId) !== -1;
-			}
-		}
-		else if (eventType === EventType.TALK) {
-			return readEvent[ReadEventType.TK_REST].indexOf(eventId) !== -1;
-		}
-		else {
-			root.log('不正なeventType');
-			return false;
-		}
-	},
-			
-	// id >= CommonEventBaseId (1000以上）のデータはマップ共有イベントなので一度実行したら既読リストから削除しない
-	cutEventId: function(arr) {
-		var i;
-		var count = arr.length;
-		var newArray = [];
- 		
+	}
+	TextRenderer.drawText(x + dx, y + dy, NewMarkConfig.text, -1, color, font);
+};
+
+//----------------------------------------------------------
+// コマンド更新時の共通処理
+//----------------------------------------------------------
+var CommandHelper = {
+	updateNewMarkIndex: function(scrollbar, commandName, eventType, propertyName) {
+		var i, count = scrollbar.getObjectCount();
+		scrollbar[propertyName] = -1;
+
 		for (i = 0; i < count; i++) {
-			if (arr[i] >= CommonEventBaseId) {
-				newArray.push(arr[i]);
+			if (scrollbar.getObjectFromIndex(i).getCommandName() === commandName) {
+				if (ReadEventCheck.hasUnreadEvent(eventType)) {
+					scrollbar[propertyName] = i;
+				}
+				break;
 			}
-		}
-		
-		return newArray;
-	},
-	
-	_spliceId: function(arr, id) {
-		var index = arr.indexOf(id);
-		
-		if (index > -1) {
-			arr.splice(index, 1);
 		}
 	}
 };
 
+//----------------------------------------------------------
+// 各種シーン・コマンドへのエイリアス追加
+//----------------------------------------------------------
+
+// マップ開始時の初期化
+var _BattleSetupScene_setSceneData = BattleSetupScene.setSceneData;
+BattleSetupScene.setSceneData = function() {
+	_BattleSetupScene_setSceneData.call(this);
+	
+	var mapId = root.getCurrentSession().getCurrentMapInfo().getId();
+	var global = root.getMetaSession().global;
+	var data = ReadEventCheck.getGlobalParameter();
+		
+	if (global.CurrentMapId !== mapId) {
+		global.CurrentMapId = mapId;
+		// マップ固有の既読情報をクリア（共通イベント以外を削除）
+		var filtered = [];
+		var cmMap = data[ReadEventType.CM_MAP];
+		for (var i = 0; i < cmMap.length; i++) {
+			if (cmMap[i] >= NewMarkConfig.commonEventBaseId) filtered.push(cmMap[i]);
+		}
+		data[ReadEventType.CM_MAP] = filtered;
+	}
+};
+
+// 戦闘準備
+var _SetupCommand_rebuildCommand = SetupCommand.rebuildCommand;
+SetupCommand.rebuildCommand = function() {
+	_SetupCommand_rebuildCommand.call(this);
+	CommandHelper.updateNewMarkIndex(this._commandScrollbar, NewMarkConfig.commandNames.CM_SETUP, EventType.COMMUNICATION, '_isNewMarkIndex_CM');
+};
+
+// マップコマンド
+var _MapCommand_rebuildCommand = MapCommand.rebuildCommand;
+MapCommand.rebuildCommand = function() {
+	_MapCommand_rebuildCommand.call(this);
+	CommandHelper.updateNewMarkIndex(this._commandScrollbar, NewMarkConfig.commandNames.CM_MAP, EventType.COMMUNICATION, '_isNewMarkIndex_CM');
+};
+
+// 拠点コマンド
+var _RestCommand_rebuildCommand = RestCommand.rebuildCommand;
+RestCommand.rebuildCommand = function() {
+	_RestCommand_rebuildCommand.call(this);
+	CommandHelper.updateNewMarkIndex(this._commandScrollbar, NewMarkConfig.commandNames.CM_REST, EventType.COMMUNICATION, '_isNewMarkIndex_CM');
+	CommandHelper.updateNewMarkIndex(this._commandScrollbar, NewMarkConfig.commandNames.TK_REST, EventType.TALK, '_isNewMarkIndex_TK');
+};
+
+//----------------------------------------------------------
+// イベント実行時の既読登録
+//----------------------------------------------------------
+var _CommunicationScreen__startEvent = CommunicationScreen._startEvent;
+CommunicationScreen._startEvent = function() {
+	var entry = this._scrollbar.getObject();
+	if (entry && entry.event) {
+		ReadEventCheck.setRead(ReadEventCheck.getInternalId(entry.event), EventType.COMMUNICATION);
+	}
+	_CommunicationScreen__startEvent.call(this);
+};	
+
+var _ImageTalkScreen__startTalkEvent = ImageTalkScreen._startTalkEvent;
+ImageTalkScreen._startTalkEvent = function() {
+	var entry = this._imageTalkWindow.getChildScrollbar().getObject();
+	if (entry && entry.event) {
+		ReadEventCheck.setRead(ReadEventCheck.getInternalId(entry.event), EventType.TALK);
+	}
+	_ImageTalkScreen__startTalkEvent.call(this);
+};
+
+// 既読イベントの色変更
+var _CommunicationScrollbar__getEventColor = CommunicationScrollbar._getEventColor;
+CommunicationScrollbar._getEventColor = function(object, textui) {
+	var id = ReadEventCheck.getInternalId(object.event);
+	if (this._isSelectable(object) && ReadEventCheck.isRead(id, EventType.COMMUNICATION)) {
+		return NewMarkConfig.viewedColor;
+	}
+	return _CommunicationScrollbar__getEventColor.call(this, object, textui);
+};
 
 })();
