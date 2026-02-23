@@ -2,7 +2,7 @@
 ■ファイル
 ScreenAchievementsList.js
 
-■SRPG Studio対応バージョン:1.270
+■SRPG Studio対応バージョン:1.319
 
 ■プラグインの概要
 実績リスト画面を実装します。
@@ -24,7 +24,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 2022/11/12 リストの列、行の調整について説明を追記
 2022/12/11 メンバ変数のスペルミスを修正　×_achievmentsList　〇_achievementsList
 2023/04/25 環境パラメータに解放済みdataIdが存在した場合にグローバルパラメータにdataIdが保存されない不具合を修正(周回などで既にクリア済みマップをもう一度クリアした時、その周のセーブデータに格納されなかった)
-
+2026/02/23 コードのリファクタリング
 
 //-----------------------------------------------
 // 実績リストの作成手順
@@ -33,9 +33,9 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
     ※オプションダイアログで、「コンフィグでオリジナルデータを表示する」にチェックをしている場合に表示されます。ユーザー・マニュアル＞データ設定＞オリジナルデータの項目を参照してください。
 	 
 	 オリジナルデータのタブ1を使用します。(※)
-	 (※)変更したい場合は下記コードの値を書き換えます(745行付近)
+	 (※)変更したい場合は下記コードの値を書き換えます(154行付近)
 	 
-	 変数　OriginalDataListIndex = 0;
+	 OriginalDataListIndex = 0;
 	 代入する数値はタブの数値-1 (左端のタブから0,1,2...)
 	 
 	 「オリジナルデータの作成」を押下してデータを作成し、名前や説明を記述します(実績リストで表示に使用する)
@@ -51,7 +51,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 　　2．細かな設定
      下記コード内の設定項目を変更することで実績リスト画面の名前などを変更することもできます。
-     ゲーム画面からリストの項目が見切れる場合、ScrollbarSetting.ColとScrollbarSetting.Rowの値を調整してください(154行付近)
+     ゲーム画面からリストの項目が見切れる場合、ScrollbarSetting.ColとScrollbarSetting.Rowの値を調整してください(160行付近)
 	 
 //-----------------------------------------------
 // 実績の解放状態の操作方法
@@ -149,6 +149,9 @@ var AchievementsListSetting = {
 	
 	// <イベントコマンド呼出し>のオブジェクト名。''で囲う
 	, Keyword: 'CEC_AchievementsList'
+	
+	// 実績リストに使用するオリジナルデータタブ番号（左端から0,1,2...）
+	, OriginalDataListIndex: 0
 };
 
 // スクロールバーの列(col), 行(row)
@@ -162,7 +165,7 @@ var ScrollbarSetting = {
 // コマンドリストに実績リスト画面を追加するか否か
 // コマンドリストに追加する位置は他のプラグインとの競合で必ずしもn番目にならない場合があります
 var ConfigureCommandSetting = {
-	  // タイトルコマンドに追加する場合 true　しない場合 false
+	  // タイトルコマンドに追加する場合 true しない場合 false
 	  TitleCommand: false
 	  // タイトルコマンドリストの下からn番目に追加する
 	, TitleCommandIndex: 1
@@ -176,15 +179,32 @@ var ConfigureCommandSetting = {
 	, ExtraCommand: true
 };
 
-//-----------------------------------------------
+//------------------------------------------------
+// 内部用共通処理（画面呼び出しの重複回避）
+//------------------------------------------------
+var AchievementSceneLauncher = {
+	open: function() {
+		var screen = createObject(AchievementsScreen);
+		var param = {};
+		SceneManager.addScreen(screen, param);
+		SceneManager.setForceForeground(true);
+		return screen;
+	},
+	
+	move: function(screen) {
+		if (SceneManager.isScreenClosed(screen)) {
+			SceneManager.setForceForeground(false);
+			return MoveResult.END;
+		}
+		return MoveResult.CONTINUE;
+	}
+};
 
 //------------------------------------------------
 // 実績リスト画面
 //------------------------------------------------
-var AchievementsScreen = defineObject(BaseScreen,
-{
+var AchievementsScreen = defineObject(BaseScreen, {
 	_itemWindow: null,
-
 	_achievementsList: null,
 	_unlockedIdArray: null,
 	_achievementsCountWindow: null,
@@ -195,51 +215,39 @@ var AchievementsScreen = defineObject(BaseScreen,
 	},
 	
 	moveScreenCycle: function() {
-		return this._moveSelect();
-	},
-	
-	_moveSelect: function() {
-		var item;
 		var input = this._itemWindow.moveWindow();
 		
-		if (input === ScrollbarInput.SELECT) {
-			//root.log('(select)');
-			// リストのアイテムを選択した時の処理を追加することも可能
-			// エクストラシーンでAchievementsScreenを利用している場合、実績解放による褒賞を入手したりだとかの処理はできない
-		}
-		else if (input === ScrollbarInput.CANCEL) {
+		if (input === ScrollbarInput.CANCEL) {
 			return MoveResult.END;
 		}
-//		else if (input === ScrollbarInput.NONE) {
-//			if (this._itemWindow.isIndexChanged()) {
-//	
-//			}
-//		}
 		
 		return MoveResult.CONTINUE;
 	},
 	
 	drawScreenCycle: function() {
-		var x = LayoutControl.getCenterX(-1, this._itemWindow.getWindowWidth());
-		var y = LayoutControl.getCenterY(-1, this._itemWindow.getWindowHeight());
+		var width = this._itemWindow.getWindowWidth();
+		var height = this._itemWindow.getWindowHeight();
+		var x = LayoutControl.getCenterX(-1, width);
+		var y = LayoutControl.getCenterY(-1, height);
 		var xInfo, yInfo;
 
 		this._itemWindow.drawWindow(x, y);
 		
 		if (this._itemWindow.getItemScrollbar().getObjectCount() === 0) {
-			this._drawNoDataText(x, y, this._itemWindow.getWindowWidth(), this._itemWindow.getWindowHeight());
+			this._drawNoDataText(x, y, width, height);
 		}
 		
-		xInfo = x +  this._itemWindow.getWindowWidth() - this._achievementsCountWindow.getWindowWidth();
+		xInfo = x + width - this._achievementsCountWindow.getWindowWidth();
 		yInfo = y - this._achievementsCountWindow.getWindowHeight();
 		this._achievementsCountWindow.drawWindow(xInfo, yInfo);
 	},
 	
 	drawScreenTopText: function(textui) {
+		var title = this.getScreenTitleName();
 		if (AchievementsListSetting.TopTextisCENTER) {
-			TextRenderer.drawScreenTopTextCenter(this.getScreenTitleName(), textui);
+			TextRenderer.drawScreenTopTextCenter(title, textui);
 		} else {
-			TextRenderer.drawScreenTopText(this.getScreenTitleName(), textui);
+			TextRenderer.drawScreenTopText(title, textui);
 		}
 	},
 	
@@ -248,23 +256,18 @@ var AchievementsScreen = defineObject(BaseScreen,
 	},
 	
 	drawScreenBottomText: function(textui) {
-		var obj = this._itemWindow.getCurrentItem();
-		var index = this._itemWindow.getItemIndex();
-		var list = this._achievementsList;
 		var text = '';
+		var item = this._itemWindow.getCurrentItem();
+		var index = this._itemWindow.getItemIndex();
 
-		if (obj !== null) {
-			if (list[index][1] === true) {
-				text = obj.getDescription();
+		if (item !== null) {
+			// 解放済みかどうかを確認
+			if (this._achievementsList[index][1]) {
+				text = item.getDescription();
+			} else {
+				text = (typeof item.custom.lockedText !== 'undefined') ? item.custom.lockedText : AchievementsListSetting.LockedItemDescription;
 			}
-			else if (typeof obj.custom.lockedText !== 'undefined') {
-				text = obj.custom.lockedText;
-			}
-			else {
-				text = AchievementsListSetting.LockedItemDescription;
-			}
-		}
-		else {
+		} else {
 			text = AchievementsListSetting.ScreenBottomText;
 		}
 		
@@ -278,64 +281,46 @@ var AchievementsScreen = defineObject(BaseScreen,
 	_prepareScreenMemberData: function(screenParam) {
 		this._itemWindow = createWindowObject(AchievementsListWindow, this);
 		this._achievementsCountWindow = createWindowObject(AchievementsCountWindow, this);
-		
-		// 環境パラメータに記録した解放済み実績を記録した配列　[dataId, ...]
 		this._unlockedIdArray = F_AchievementControl.getUnlockedIdArray();
-		
-		// [実績, 解放状態]を要素にもつ二次元配列
 		this._achievementsList = this._checkUnlocked();
 	},
 	
 	_completeScreenMemberData: function(screenParam) {
-		var col = ScrollbarSetting.Col > 0 ? ScrollbarSetting.Col : 1;
-		var row = ScrollbarSetting.Row > 0 ? ScrollbarSetting.Row : 1;
+		var col = Math.max(1, ScrollbarSetting.Col);
+		var row = Math.max(1, ScrollbarSetting.Row);
+		var scrollbar = this._itemWindow.getItemScrollbar();
 		
 		this._itemWindow.getItemScrollbar().setScrollFormation(col, row);	
 		this._itemWindow.enableSelectCursor(true);
 		
-		this._setAchievmentItems();
+		// リストのセットアップ
+		var unlockedStatusArray = [];
+		scrollbar.resetScrollData();
+		for (var i = 0; i < this._achievementsList.length; i++) {
+			scrollbar.objectSet(this._achievementsList[i][0]);
+			unlockedStatusArray.push(this._achievementsList[i][1]);
+		}
+		scrollbar.objectSetEnd();
+		scrollbar.setAvailableArray(unlockedStatusArray);
+
 		this._achievementsCountWindow.setCount(this._achievementsList.length, this._unlockedIdArray.length);
 	},
 	
-	_setAchievmentItems: function() {
-		var i;
-		var scrollbar = this._itemWindow.getItemScrollbar();
-		var arr = this._achievementsList;
-		var count = arr.length;
-		var unlockedArray = [];
-
-		scrollbar.resetScrollData();
-		
-		for (i = 0; i < count; i++) {
-			// オリジナルデータの実績リストから取得したdataをスクロールバーのobjにセットする
-			scrollbar.objectSet(arr[i][0]);
-			
-			// unlock状態を示すboolean値を配列に格納する
-			unlockedArray.push(arr[i][1]);
-		}
-		
-		scrollbar.objectSetEnd();
-		
-		// 実績の解放状態を配列AchievementsListScrollbar._availableArrayに格納する
-		scrollbar.setAvailableArray(unlockedArray);
-	},
-	
-	// オリジナルデータの実績リストからdataを取得してthis._unlockedIdArrayに記録されたidと一致していれば解放済みを設定した配列を返す
 	_checkUnlocked: function() {
 		var list = F_AchievementControl._getOriginalDataList();
 		var count = list.getCount();
-		var unlockedarr = this._unlockedIdArray;
-		var i, data, isUnlocked;
+		var unlockedIds = this._unlockedIdArray;
 		var arr = [];
+		
+		// 検索効率化のためにMap代わりのオブジェクトを作成
+		var idMap = {};
+		for (var j = 0; j < unlockedIds.length; j++) {
+			idMap[unlockedIds[j]] = true;
+		}
 
-		for (i = 0; i < count; i++) {
-			data = list.getData(i);
-			isUnlocked = unlockedarr.some(
-				function(id) {
-					return id === data.getId();
-				}
-			);
-
+		for (var i = 0; i < count; i++) {
+			var data = list.getData(i);
+			var isUnlocked = !!idMap[data.getId()];
 			arr.push([data, isUnlocked]);
 		}
 		
@@ -343,29 +328,18 @@ var AchievementsScreen = defineObject(BaseScreen,
 	},
 	
 	_drawNoDataText: function(x, y, width, height) {
-		var range;
 		var text = StringTable.Communication_NoData;
 		var textui = this._itemWindow.getWindowTextUI();
-		var color = textui.getColor();
-		var font = textui.getFont();
-		
-		range = createRangeObject(x, y, width, height);
-		TextRenderer.drawRangeText(range, TextFormat.CENTER, text, -1, color, font);
+		var range = createRangeObject(x, y, width, height);
+		TextRenderer.drawRangeText(range, TextFormat.CENTER, text, -1, textui.getColor(), textui.getFont());
 	},
 	
-	getExtraDisplayName: function() {
-		return this.getScreenTitleName();
-	},
-	
-	getExtraDescription: function() {
-		return AchievementsListSetting.ScreenBottomText;
-	}
-}
-);
+	getExtraDisplayName: function() { return this.getScreenTitleName(); },
+	getExtraDescription: function() { return AchievementsListSetting.ScreenBottomText; }
+});
 
 // 実績解放数などを表示するウィンドウ
-var AchievementsCountWindow = defineObject(BaseWindow,
-{
+var AchievementsCountWindow = defineObject(BaseWindow, {
 	_maxCount: 0,
 	_unlockedCount: 0,
 	
@@ -374,283 +348,124 @@ var AchievementsCountWindow = defineObject(BaseWindow,
 		this._unlockedCount = unlocked;
 	},
 	
-	moveWindowContent: function() {
-		return MoveResult.END;
-	},
-	
 	drawWindowContent: function(x, y) {
 		var textui = this.getWindowTextUI();
-		var color = textui.getColor();
 		var font = textui.getFont();
-		var count = this._unlockedCount;
-		var maxCount = this._maxCount;
+		var color = textui.getColor();
+		var percentage = this._maxCount > 0 ? Math.ceil((this._unlockedCount / this._maxCount) * 100) : 0;
 		var dy = 6;
-		var percentage = Math.ceil((count / maxCount) * 100);
 
-		NumberRenderer.drawNumber(x + 20, y - dy, count);
+		NumberRenderer.drawNumber(x + 20, y - dy, this._unlockedCount);
 		TextRenderer.drawKeywordText(x + 35, y - dy, '/', -1, color, font);
-		NumberRenderer.drawNumber(x + 60, y - dy, maxCount);
+		NumberRenderer.drawNumber(x + 60, y - dy, this._maxCount);
 		
-		TextRenderer.drawKeywordText(x + 88, y - dy, '（', -1, ColorValue.INFO, font)
+		TextRenderer.drawKeywordText(x + 88, y - dy, '（', -1, ColorValue.INFO, font);
 		NumberRenderer.drawNumberColor(x + 120, y - dy, percentage, 1, 255);
 		TextRenderer.drawKeywordText(x + 130, y - dy, '％）', -1, ColorValue.INFO, font);
 	},
 	
-	getWindowWidth: function() {
-		return 180;
-	},
-	
-	getWindowHeight: function() {
-		return 40;
-	}
-}
-);
+	getWindowWidth: function() { return 180; },
+	getWindowHeight: function() { return 40; }
+});
 
-// ItemListWindowをdefineObject関数で継承させる
-// 描画処理などを独自のものに置き換えることを想定して新たなオブジェクトを作成している
-var AchievementsListWindow = defineObject(ItemListWindow,
-{
+var AchievementsListWindow = defineObject(ItemListWindow, {
 	initialize: function() {
 		this._scrollbar = createScrollbarObject(AchievementsListScrollbar, this);
 	}
-}
-);
+});
 
-// ItemListScrollbarをdefineObject関数で継承させる
-var AchievementsListScrollbar = defineObject(ItemListScrollbar,
-{
+var AchievementsListScrollbar = defineObject(ItemListScrollbar, {
 	drawScrollContent: function(x, y, item, isSelect, index) {
-		var isAvailable;
+		var isAvailable = true;
 		var textui = this.getParentTextUI();
-		var font = textui.getFont();
-		var color = textui.getColor();
-		var isDrawLimit = false;　// 描画をシンプルにするため'--'を表示させないようにしている
 		
-		if (item === null) {
-			return;
-		}
+		if (item === null) return;
 		
-		// 実績解放済みであればtrue
 		if (this._availableArray !== null) {
 			isAvailable = this._availableArray[index];
 		}
-		else {
-			isAvailable = true;
-		}
 		
 		if (isAvailable) {
-			ItemRenderer.drawItem(x, y, item, color, font, isDrawLimit);
-		}
-		else {
-			TextRenderer.drawKeywordText(x + 30, y, AchievementsListSetting.LockedText, -1, ColorValue.DISABLE, font);
+			ItemRenderer.drawItem(x, y, item, textui.getColor(), textui.getFont(), false);
+		} else {
+			TextRenderer.drawKeywordText(x + 30, y, AchievementsListSetting.LockedText, -1, ColorValue.DISABLE, textui.getFont());
 		}
 	},
 	
-	setUnlockedData: function(isAvailable) {
-		if (typeof isAvailable !== 'boolean') {
-			isAvailable = false;
-		}
-		this._availableArray.push(isAvailable);
-	},
-	
-	// 1アイテム当たりの表示幅(初期値で220)
 	getObjectWidth: function() {
 		return ItemRenderer.getItemWidth();
 	}
-}
-);
+});
 
 //-----------------------------------------
-// 独自イベントコマンドを登録する
+// 各種コマンドへの登録
 //-----------------------------------------
-var alias001 = ScriptExecuteEventCommand._configureOriginalEventCommand;
+
+// イベントコマンド
+var _ScriptExecuteEventCommand__configureOriginalEventCommand = ScriptExecuteEventCommand._configureOriginalEventCommand;
 ScriptExecuteEventCommand._configureOriginalEventCommand = function(groupArray) {
-	alias001.call(this, groupArray);
-	
+	_ScriptExecuteEventCommand__configureOriginalEventCommand.call(this, groupArray);
 	groupArray.appendObject(EC_AchievementsScreen);
 };
 
-//-----------------------------------------
-// 実績リスト画面を呼び出すイベントコマンド
-//-----------------------------------------
-var EC_AchievementsScreen = defineObject(BaseEventCommand, 
-{	
+var EC_AchievementsScreen = defineObject(BaseEventCommand, {	
 	_achievementsScreen: null,
-	
 	enterEventCommandCycle: function() {
-		this._prepareEventCommandMemberData();
-		
-		if (!this._checkEventCommand()) {
-			return EnterResult.NOTENTER;
-		}
-		
-		return this._completeEventCommandMemberData();
-	},
-	
-	moveEventCommandCycle: function() {
-		if (SceneManager.isScreenClosed(this._achievementsScreen)) {
-			SceneManager.setForceForeground(false);
-			return MoveResult.END;
-		}
-		
-		return MoveResult.CONTINUE;
-	},
-	
-	drawEventCommandCycle: function() {
-	},
-
-	getEventCommandName: function() {
-		return AchievementsListSetting.Keyword;
-	},
-
-	isEventCommandSkipAllowed: function() {
-		// Spaceキーや右クリック押下によるスキップを許可しない
-		return false;
-	},
-	
-	_prepareEventCommandMemberData: function() {
-		this._achievementsScreen = createObject(AchievementsScreen);
-	},
-	
-	_checkEventCommand: function() {
-		return true;
-	},
-	
-	_completeEventCommandMemberData: function() {
-		var screenParam;
-		
-		screenParam = this._createScreenParam();
-		SceneManager.addScreen(this._achievementsScreen, screenParam);
-		SceneManager.setForceForeground(true);
-		
+		this._achievementsScreen = AchievementSceneLauncher.open();
 		return EnterResult.OK;
 	},
+	moveEventCommandCycle: function() {
+		return AchievementSceneLauncher.move(this._achievementsScreen);
+	},
+	getEventCommandName: function() { return AchievementsListSetting.Keyword; },
+	isEventCommandSkipAllowed: function() { return false; }
+});
 
-	_createScreenParam: function() {
-		var screenParam = {};
-		
-		return screenParam;
-	}
-}
-);
-
-
-// 拠点のコマンドリストに実績リスト画面を追加する
+// 拠点コマンド
 var _RestCommand_configureCommands = RestCommand.configureCommands;
 RestCommand.configureCommands = function(groupArray) {
 	var index = groupArray.length - ConfigureCommandSetting.RestCommandIndex;
-	
 	_RestCommand_configureCommands.call(this, groupArray);
-	
-	if (ConfigureCommandSetting.RestCommand === true) {
+	if (ConfigureCommandSetting.RestCommand) {
 		groupArray.insertObject(RestCommand.AchievementsList, index);
 	}
 };
 
-RestCommand.AchievementsList = defineObject(BaseListCommand, 
-{
-	_achievementsScreen: null,
-	
-	openCommand: function() {
-		var screenParam = this._createScreenParam();
-		
-		this._achievementsScreen = createObject(AchievementsScreen);
-		SceneManager.addScreen(this._achievementsScreen, screenParam);
-		SceneManager.setForceForeground(true);
-	},
-	
-	moveCommand: function() {
-		if (SceneManager.isScreenClosed(this._achievementsScreen)) {
-			SceneManager.setForceForeground(false);
-			return MoveResult.END;
-		}
-		
-		return MoveResult.CONTINUE;
-		
-	},
-	
-	_createScreenParam: function() {
-		var screenParam = {};
-		
-		return screenParam;
-	},
+RestCommand.AchievementsList = defineObject(BaseListCommand, {
+	_screen: null,
+	openCommand: function() { this._screen = AchievementSceneLauncher.open(); },
+	moveCommand: function() { return AchievementSceneLauncher.move(this._screen); },
+	getCommandName: function() { return AchievementsListSetting.Title; }
+});
 
-	getCommandName: function() {
-		return AchievementsListSetting.Title;
-	}
-}
-);
-
-
-// タイトルシーンのコマンドリストに実績リスト画面を追加する
+// タイトルコマンド
 var _TitleScene__configureTitleItem = TitleScene._configureTitleItem;
 TitleScene._configureTitleItem = function(groupArray) {
 	var index = groupArray.length - ConfigureCommandSetting.TitleCommandIndex;
-	
 	_TitleScene__configureTitleItem.call(this, groupArray);
-	
-	if (ConfigureCommandSetting.TitleCommand === true) {
+	if (ConfigureCommandSetting.TitleCommand) {
 		groupArray.insertObject(TitleCommand.AchievementsList, index);
 	}
 };
 
-TitleCommand.AchievementsList = defineObject(BaseTitleCommand,
-{
-	_achievementsScreen: null,
-	
-	openCommand: function() {
-		var screenParam = this._createScreenParam();
-		
-		this._achievementsScreen = createObject(AchievementsScreen);
-		SceneManager.addScreen(this._achievementsScreen, screenParam);
-		SceneManager.setForceForeground(true);
-	},
-	
-	moveCommand: function() {
-		if (SceneManager.isScreenClosed(this._achievementsScreen)) {
-			SceneManager.setForceForeground(false);
-			return MoveResult.END;
-		}
-		
-		return MoveResult.CONTINUE;
-		
-	},
-	
-	_createScreenParam: function() {
-		var screenParam = {};
-		
-		return screenParam;
-	},
+TitleCommand.AchievementsList = defineObject(BaseTitleCommand, {
+	_screen: null,
+	openCommand: function() { this._screen = AchievementSceneLauncher.open(); },
+	moveCommand: function() { return AchievementSceneLauncher.move(this._screen); },
+	getCommandName: function() { return AchievementsListSetting.Title; }
+});
 
-	getCommandName: function() {
-		return AchievementsListSetting.Title;
-	}
-}
-);
-
-// エクストラのコマンドリストに実績リスト画面を追加する
+// エクストラ画面
 var _ExtraScreen__configureExtraScreens = ExtraScreen._configureExtraScreens;
 ExtraScreen._configureExtraScreens = function(groupArray) {
-	//var index = groupArray.length;
-	
 	_ExtraScreen__configureExtraScreens.call(this, groupArray);
-	
-	//groupArray.insertObject(TitleCommand.AchievementsList, index);
 	groupArray.appendObject(AchievementsScreen);
 };
 
-// エクストラに実績リストの項目を出現させる
 var _ExtraControl_isExtraDisplayable = ExtraControl.isExtraDisplayable;
 ExtraControl.isExtraDisplayable = function() {
-	var result = _ExtraControl_isExtraDisplayable.call(this);
-
-	if (ConfigureCommandSetting.ExtraCommand) {
-		return true;
-	}
-	
-	return result;
+	return ConfigureCommandSetting.ExtraCommand || _ExtraControl_isExtraDisplayable.call(this);
 };
-
 
 //-----------------------------------------------------
 // オリジナルデータのデータ名を取得して表示する制御文字を追加する
@@ -703,104 +518,74 @@ DataVariable.OdbName = defineObject(BaseDataVariable,
 });
 
 
-
-//-------------------------------------------
-// polyfill
-//-------------------------------------------
-if (!Array.prototype.some)
-{
-  Array.prototype.some = function(fun /*, thisArg */)
-  {
-    'use strict';
-    if (this === void 0 || this === null)
-      throw new TypeError();
-    var t = Object(this);
-    var len = t.length >>> 0;
-    if (typeof fun !== 'function')
-      throw new TypeError();
-    var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-    for (var i = 0; i < len; i++)
-    {
-      if (i in t && fun.call(thisArg, t[i], i, t))
-        return true;
-    }
-    return false;
-  };
+// Polyfill
+if (!Array.prototype.indexOf) {
+	Array.prototype.indexOf = function(elt) {
+		var len = this.length >>> 0;
+		var from = Number(arguments[1]) || 0;
+		from = (from < 0) ? Math.ceil(from) : Math.floor(from);
+		if (from < 0) from += len;
+		for (; from < len; from++) {
+			if (from in this && this[from] === elt) return from;
+		}
+		return -1;
+	};
 }
-
 
 })();
 
 //------------------------------------------------
-// 外部から呼び出せるように即時関数の外に記述
-// 実績リストに表示するデータを設定/取得するためのオブジェクト
+// 外部操作用オブジェクト
 //------------------------------------------------
 var F_AchievementControl = {
-	
-	// 環境パラメータに保存した実績リストの配列を空にする
 	init: function() {
-		var env = root.getExternalData().env;
-		env.UnlockedArray = [];
+		root.getExternalData().env.UnlockedArray = [];
 	},
 	
-	// オリジナルデータから実績リストに使用するリストを取得する
 	_getOriginalDataList: function() {
-		var OriginalDataListIndex = 0;
-		return root.getBaseData().getOriginalDataList(OriginalDataListIndex);
+		return root.getBaseData().getOriginalDataList(0);
 	},
 	
-	// オリジナルデータのリストからデータをindex順に取得する
-	getDateArray: function() {
-		var i, data;
-		var list = this._getOriginalDataList();
-		var count = list.getCount();
-		var arr = [];
-		
-		for (i = 0; i < count; i++) {
-			data = list.getData(i);
-			if (data !== null) {
-				arr.push(data);
-			}
-		}
-		
-		return arr;		
-	},
-	
-	// 環境パラメータに保存している解放済み実績の配列(要素はオリジナルデータのid)を取得する
 	getUnlockedIdArray: function() {
 		var env = root.getExternalData().env;
-				
 		if (Object.prototype.toString.call(env.UnlockedArray) !== '[object Array]') {
 			env.UnlockedArray = [];
 		}
 		return env.UnlockedArray;
 	},
 	
-	// 環境パラメータに保存している解放済み実績のidを配列を記録する
-	addUnlockedItem: function(dataId) {
-		var arr;
-
-		if (typeof dataId !== 'number') {
-			root.msg('dataIdがnumber型ではありません。処理を中断します');
-			return;
+	getGlobaldata: function() {
+		var global = root.getMetaSession().global;
+		if (Object.prototype.toString.call(global.unlockedIdList) !== '[object Array]') {
+			global.unlockedIdList = [];
 		}
-		
-		arr = this.getUnlockedIdArray();
-		
-		// dataIdが環境パラメータに未登録であれば記録する
-		if (arr.indexOf(dataId) === -1) {
-			arr.push(dataId);
-			root.log('dataId:' + dataId + 'をenv.UnlockedArrayに挿入');
-		}
-		
-		// グローバルパラメータにも解放した実績のitemIdを記録しておく
-		arr = this.getGlobaldata();
-		if (arr.indexOf(dataId) === -1) {
-			this.setGlobaldata(dataId);
-		}
-
+		return global.unlockedIdList;
 	},
-	
+		
+	addUnlockedItem: function(dataId) {
+		if (typeof dataId !== 'number') return;
+		
+		var envArr = this.getUnlockedIdArray();
+		if (envArr.indexOf(dataId) === -1) {
+			envArr.push(dataId);
+		}
+		
+		var globalArr = this.getGlobaldata();
+		if (globalArr.indexOf(dataId) === -1) {
+			globalArr.push(dataId);
+		}
+	},
+
+	restoreUnlockedData: function() {
+		var envData = this.getUnlockedIdArray();
+		var globalData = this.getGlobaldata();
+		for (var i = 0; i < globalData.length; i++) {
+			if (envData.indexOf(globalData[i]) === -1) {
+				envData.push(globalData[i]);
+			}
+		}		
+	},
+		
 	// 環境パラメータに保存している解放済み実績アイテムの配列から指定したidの要素を削除する
 	cutUnlockedItem: function(dataId) {
 		var arr = this.getUnlockedIdArray();
@@ -814,44 +599,10 @@ var F_AchievementControl = {
 		arr.splice(index, 1);
 		root.log('dataId:' + dataId + 'をenv.UnlockedArrayのindex:' + index + 'から削除');
 	},
-		
-	// グローバルパラメータに保存している解放済み実績の配列を取得する
-	getGlobaldata: function() {
-		var global = root.getMetaSession().global;
-		
-		if (Object.prototype.toString.call(global.unlockedIdList) !== '[object Array]') {
-			global.unlockedIdList = [];
-		}
-		
-		return global.unlockedIdList;
-	},
-	
-	// グローバルパラメータに解放済み実績の配列を記録する
-	setGlobaldata: function(dataId) {
-		root.log('dataId:' + dataId + 'をglobal.unlockedIdListに挿入');
-		this.getGlobaldata().push(dataId);
-	},
-	
-	// グローバルパラメータに保存している解放済み実績から環境パラメータの実績状況を更新する
-	// evsファイルの初期化によって環境パラメータが削除された場合にセーブデータから解放済みの実績を可能な限り復帰できるようにする
-	restoreUnlockedData: function() {
-		var envData = this.getUnlockedIdArray();
-		var globalData = this.getGlobaldata();
-		var count = globalData.length;
-		var i, dataId;
-		
-		for (i = 0; i < count; i++) {
-			dataId = globalData[i];
-			if (envData.indexOf(dataId) === -1) {
-				envData.push(dataId);
-				root.log('dataId:' + dataId + 'をglobalDataからenvDataにコピー');
-			}
-		}		
-	},
 	
 	// 全ての実績を解放状態に設定する
 	_unlockingAll: function() {
-		var i, data, id, arr;
+		var i, data, id, arrEnv, arrGlobal;
 		var list = this._getOriginalDataList();
 		var count = list.getCount();
 		var global = root.getMetaSession().global;
@@ -859,16 +610,16 @@ var F_AchievementControl = {
 		this.init();
 		global.unlockedIdList = [];
 		
-		arr = this.getUnlockedIdArray();
+		arrEnv = this.getUnlockedIdArray();
+		arrGloval = this.getGlobaldata();
 		
 		for (i = 0; i < count; i++) {
 			data = list.getData(i);
 			if (data !== null) {
 				id = data.getId();
-				arr.push(id);
-				this.setGlobaldata(id);
+				arrEnv.push(id);
+				arrGloval.push(id);
 			}
 		}
 	}
-	
 };
