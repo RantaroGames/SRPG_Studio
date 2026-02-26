@@ -15,7 +15,7 @@ SkillGetItem_SkillInfoDisplay.js
 
 (注意点）
 スキル情報は、基本的にアイテム情報ウィンドウの下部に表示されます
-表示できないウィンドウ高さの場合はアイテム情報ウィンドウの左に表示されます
+表示できないウィンドウ高さの場合はアイテム情報ウィンドウの右または左に表示されます
 ウィンドウが画面に収まらない場合が生じることもあります（ゲーム画面が小さい場合やスキル情報量が多い場合）
 またショップレイアウトを改変しているプラグインとも競合する恐れが大きいです
 
@@ -82,10 +82,11 @@ var SkillInfoManager = {
 			if (res.itemY < 0) {
 				res.itemY = y;
 				res.skillY = y;
-				res.skillX = x - skillWidth;
 				if (res.skillY + skillHeight > lowerLimit) {
 					res.skillY = lowerLimit - skillHeight;
 				}
+				// 右に表示できるなら右に配置を優先
+				res.skillX = x + itemWidth + skillWidth < gameWidth ? x + itemWidth : x - skillWidth;
 			}
 		}
 
