@@ -1,4 +1,4 @@
-# SRPG_Studio
+# SRPG_Studio Plutin
 <br>
 ■プラグインの概要<br>
 シミュレーションRPG作成ソフト『SRPG Studio』(制作元「サファイアソフト」)で利用できます。<br>
