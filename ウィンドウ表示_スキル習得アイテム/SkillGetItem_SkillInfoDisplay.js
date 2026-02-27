@@ -76,18 +76,11 @@ var SkillInfoManager = {
 
 		// 下にはみ出す場合は上にずらす
 		if (res.skillY + skillHeight > lowerLimit) {
-			res.itemY = lowerLimit - (itemHeight + skillHeight);
-			res.skillY = res.itemY + itemHeight;
-			
-			// 上にも収まらない（画面縦幅不足）場合は横に並べる
-			if (res.itemY < 0) {
-				res.itemY = y;
-				res.skillY = y;
-				if (res.skillY + skillHeight > lowerLimit) {
-					res.skillY = lowerLimit - skillHeight;
-				}
-				// 右に表示できるなら右に配置を優先
-				res.skillX = x + itemWidth + skillWidth < gameWidth ? x + itemWidth : x - skillWidth;
+			// 右に表示できるなら右に配置を優先
+			res.skillX = x + itemWidth + skillWidth < gameWidth ? x + itemWidth : x - skillWidth;
+			res.skillY = y;
+			if (res.skillY + skillHeight > lowerLimit) {
+				res.skillY = lowerLimit - skillHeight;
 			}
 		}
 
