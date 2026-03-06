@@ -45,7 +45,7 @@ TextCustomEffect._drawArea = function(active, passive, skillArray, isRight) {
 		
 		// テキストUIの表示位置を左に60ずらして長いスキル名でも見切れずに描画させる
 		// フォントや文字サイズにもよるが、10文字程度のスキル名ならばこの部分の変更だけで一行で表示できるようになる
-		width = this._getWidth()　+ 60;
+		width = this._getWidth() + 60;
 		max = RealBattleArea.WIDTH;
 		if (x + width > max) {
 			x = max - width;
