@@ -152,14 +152,16 @@ UnitMenuBottomWindow.moveWindowContent = function() {
 	return result;
 };
 
+
 var _UnitMenuBottomWindow__drawInfoWindow = UnitMenuBottomWindow._drawInfoWindow;
 UnitMenuBottomWindow._drawInfoWindow = function(xBase, yBase) {
 	var itemWindow = this._itemInteraction.getInteractionWindow();
 	var skill = itemWindow._skillGetItemSkill;
-
+	
+	_UnitMenuBottomWindow__drawInfoWindow.call(this, xBase, yBase);
+	
 	// 通常の描画条件（スキルがない、またはヘルプがアイテム以外）
 	if (!skill || this._isTracingLocked || this._getActiveUnitMenuHelp() !== UnitMenuHelp.ITEM) {
-		_UnitMenuBottomWindow__drawInfoWindow.call(this, xBase, yBase);
 		return;
 	}
 
@@ -171,11 +173,9 @@ UnitMenuBottomWindow._drawInfoWindow = function(xBase, yBase) {
 	}
 
 	if (!this._isSkillWindow) {
-		_UnitMenuBottomWindow__drawInfoWindow.call(this, xBase, yBase);
 		SkillInfoManager.drawShiftHint(x, yBase, false);
 	} else {
 		var pos = SkillInfoManager.getResizedPos(itemWindow, this._getSkillInfoWindow, x, yBase);
-		itemWindow.drawWindow(pos.itemX, pos.itemY);
 		this._getSkillInfoWindow.drawWindow(pos.skillX, pos.skillY);
 		SkillInfoManager.drawShiftHint(pos.itemX, pos.itemY, true);
 	}
