@@ -300,7 +300,7 @@ MapParts.MapThumbnail = defineObject(BaseMapParts,
 		
 		var color = 0xffffcc;
 		var font = TextRenderer.getDefaultFont();
-		TextRenderer.drawKeywordText(x + this.getWindowWidth() - 90,  y + this.getWindowHeight(), 'C：表示切替', -1, color, font);
+		TextRenderer.drawKeywordText(x + this.getWindowWidth() - 90,  y + this.getWindowHeight() - 20, 'C：表示切替', -1, color, font);
 	},
 	
 	// ユニットの位置座標を取得して配列に格納する
