@@ -3,7 +3,7 @@
 MapParts_MapThumbnail.js
 
 ■SRPG Studio対応バージョン
-ver.1.278
+ver.1.321
 
 ■プラグインの概要
 マップ攻略中にミニマップを表示します
@@ -34,6 +34,7 @@ ran
 2023/03/20 表示切替方式を変更(cキーで大→小→非表示→大...)
 2025/01/20 マップカーソルが画面右半分にある時は、ミニマップ表示位置を左側に移動させるようにした
 2025/07/13 環境設定で「なし」を設定している際に不要な処理が入っていた問題を修正
+2026/05/10 コードのリファクタリング
 
 */
 
@@ -43,435 +44,373 @@ ran
 // 設定項目
 //--------------------------------------
 var MiniMapSetting = {
-	// 幅(環境設定の値[大, 小, 非表示, なし]に対応する配列)
-	  MapWidth: [240, 200, 0, 0]
-	// 高さ(環境設定の値に対応する配列)
-	, MapHeight: [180, 150, 0, 0]
-	// アルファ値
-	, MapAlpha: 160
-	
-	// ユニット位置を示すシンボルの色[自軍, 敵軍, 友軍]
-	, UnitColor: [0x12fcee, 0xef3242, 0x08f511]
-	
-	// ミニマップの下地として描画する四角形設定
-	// 輪郭の設定[color, alpha, size]
-	, StrokeInfo: [0x000033, 255, 2]
-	// 塗りつぶしの設定[color, alpha]
-	, FillColor: [0x000080, 160]
+    // 幅(環境設定の値[大, 小, 非表示, なし]に対応する配列)
+    MapWidth: [240, 200, 0, 0],
+    // 高さ(環境設定の値に対応する配列)
+    MapHeight: [180, 150, 0, 0],
+    // ミニマップ自体のアルファ値
+    MapAlpha: 160,
+    
+    // ユニット位置を示すシンボルの色[自軍, 敵軍, 友軍]
+    UnitColor: [0x12fcee, 0xef3242, 0x08f511],
+    // 選択中のユニット（カーソル位置）を強調する色
+    CurrentUnitColor: 0xffffff,
+    
+    // ミニマップの下地として描画する四角形設定
+    // 輪郭の設定[color, alpha, size]
+    StrokeInfo: [0x000033, 255, 2],
+    // 塗りつぶしの設定[color, alpha]
+    FillColor: [0x000080, 160],
+    
+    // スクロール範囲（カメラ枠）の色と透明度
+    ScrollRangeColor: 0xffffff,
+    ScrollRangeAlpha: 120,
+
+    // マージン設定
+    Margin: 20,
+    
+    // コンフィグ保存用のキー名
+    ConfigKey: 'MapParts_MiniMap'
 };
 
-
-// マップパーツにミニマップを描画する処理を追加する
-// マップのスクロール位置によって地形情報ウィンドウがミニマップの上に描画される場合もあるが、ミニマップの視認性は重要度が低いと考えて特に表示位置を調整する処理は加えていない
+//-------------------------------------------------------------------------
+// MapPartsCollection の拡張
+//-------------------------------------------------------------------------
 var _MapPartsCollection__configureMapParts = MapPartsCollection._configureMapParts;
 MapPartsCollection._configureMapParts = function(groupArray) {
-	groupArray.appendObject(MapParts.MapThumbnail);
-	
-	_MapPartsCollection__configureMapParts.call(this, groupArray);
-
+    // 標準パーツの前にミニマップを登録（描画順の考慮）
+    groupArray.appendObject(MapParts.MapThumbnail);
+    _MapPartsCollection__configureMapParts.call(this, groupArray);
 };
 
+//-------------------------------------------------------------------------
+// MapParts.MapThumbnail オブジェクトの定義
+//-------------------------------------------------------------------------
 MapParts.MapThumbnail = defineObject(BaseMapParts,
 {
-	_picCache: null,
-	_obj: null,
-	_scrollPos: null,
-	_currentPos: null,
-	
-	setMapCursor: function(object) {
-		this._mapCursor = object;
-		this._init();
-		
-		if (this.getConfigFlagValue() !== 3) {
-			this._obj = this._setPositionSettings();
-			this._scrollPos = this._getScrollPos();
-			this._currentPos = this._getCurrentPos();
-		}
-	},
-	
-	_init: function() {
-		this._picCache = null;
-		this._obj = null;
-		this._scrollPos = null;
-		this._currentPos = null;
-	},
-	
-	// ユニットが設定されたらキャッシュを破棄して画像を再取得する(カーソルを合わせたユニット位置を白丸で表示するため)
-	setUnit: function(unit) {
-		if (this.getConfigFlagValue() === 3) {
-			return;
-		}
-		
-		this._picCache = null;
-		this._obj = this._setPositionSettings();
-		this._scrollPos = this._getScrollPos();
-		this._currentPos = this._getCurrentPos();
-	},
-	
-	moveMapParts: function() {
-		if (this.getConfigFlagValue() >= 2) {
-			return MoveResult.END;
-		}
-		
-		// (スクロール値が異なる || 位置座標の記憶とユニット数が異なる)場合、キャッシュを破棄して画像を再取得する
-		if (!this._checkScroll() || !this._checkUnitCount()) {
-			this._picCache = null;
-			this._obj = this._setPositionSettings();
-		}
-		
-		this._currentPos = this._getCurrentPos();
-		
-		return MoveResult.END;
-	},
-	
-	// スクロール値が記憶と異なった場合を検知する
-	_checkScroll: function() {
-		var pos = this._getScrollPos();
-		
-		if (this._scrollPos === null) return false;
-		if (this._scrollPos.x !== pos.x || this._scrollPos.y !== pos.y) {
-			this._scrollPos = pos;
-			return false;
-		}
-		return true;
-	},
-	
-	// ユニットの死亡や消去、登場、援軍の出現などの理由でユニット数が変化した場合を検知する
-	// getSortieListは「出撃・生存・フュージョンされていない」ユニットを格納している
-	// getAliveListは「生存・フュージョンされていない」ユニットを格納している
-	// ユニット数の変動のみを検知している都合上、短距離のユニット移動による変化に対応しきれない問題がある(※)
-	// (※イベントコマンドでスクロール値が変化しない位置にユニットを移動させた場合など)
-	// ただし、任意のユニットを選択すれば位置表示は更新されるので、それほど問題視することは無いと思う
-	_checkUnitCount: function() {
-		var obj = this._obj;
-		var playerList = PlayerList.getSortieList();
-		var enemyList = EnemyList.getAliveList();
-		var allyList = AllyList.getAliveList();
-		
-		if (playerList.getCount() !== obj.playerArrayX.length ||
-			enemyList.getCount() !== obj.enemyArrayX.length ||
-			allyList.getCount() !== obj.allyArrayX.length
-		) {
-			return false;
-		}
-		
-		return true;
-	},
-	
-	// ピクセル単位のスクロール値を取得する
-	_getScrollPos: function() {
-		var session = root.getCurrentSession();
-		if (session === null) return null;
-		
-		var pos = {};
-		pos.x = session.getScrollPixelX();
-		pos.y = session.getScrollPixelY();
+    _picCache: null,
+    _obj: null,
+    _scrollPos: null,
+    _currentPos: null,
+    
+    setMapCursor: function(object) {
+        this._mapCursor = object;
+        this._init();
+        
+        if (this.getConfigFlagValue() !== 3) {
+            this._refreshData();
+        }
+    },
+    
+    _init: function() {
+        this._picCache = null;
+        this._obj = null;
+        this._scrollPos = null;
+        this._currentPos = null;
+    },
+    
+    // ユニット情報が更新された際に呼び出される
+    setUnit: function(unit) {
+        if (this.getConfigFlagValue() === 3) {
+            return;
+        }
+        this._picCache = null;
+        this._refreshData();
+    },
 
-		return pos;
-	},
-	
-	drawMapParts: function() {
-		var x, y, unit;
-		
-		// 環境設定でミニマップを非表示にしている
- 		if (this.getConfigFlagValue() > 1) {
-			return;
-		}
-		
-		// ユニットを選択した(向きが正面では無い)時は、ミニマップを描画しない
-		unit = this.getMapPartsTarget();
-		if (unit !== null && unit.getDirection() !== DirectionType.NULL) {
-			return;
-		}
-		
-		// ミニマップを描画する原点座標
-		x = this._getPositionX();
-		y = root.getGameAreaHeight() - this.getWindowHeight() - 20;
-		
-		this._drawMain(x, y);
-	},
-	
-	_getPositionX: function() {
-		var x = LayoutControl.getPixelX(this.getMapPartsX());
-		var dx = root.getGameAreaWidth() / 2;
-		var y = LayoutControl.getPixelY(this.getMapPartsY());
-		var dy = root.getGameAreaHeight() / 2;
-		var xBase = root.getGameAreaWidth() - this.getWindowWidth() - 20;
-		
-		if (x > dx && y > dy) {
-			return 20;
-		}
-		else {
-			return xBase;
-		}
-	},
+    _refreshData: function() {
+        this._obj = this._setPositionSettings();
+        this._scrollPos = this._getScrollPos();
+        this._currentPos = this._getCurrentPos();
+    },
+    
+    moveMapParts: function() {
+        if (this.getConfigFlagValue() >= 2) {
+            return MoveResult.END;
+        }
+        
+        // スクロール位置の変化、またはユニット数の変化を検知してキャッシュを更新
+        if (!this._checkScroll() || !this._checkUnitCount()) {
+            this._picCache = null;
+            this._obj = this._setPositionSettings();
+        }
+        
+        this._currentPos = this._getCurrentPos();
+        
+        return MoveResult.END;
+    },
+    
+    _checkScroll: function() {
+        var pos = this._getScrollPos();
+        if (!this._scrollPos) return false;
 
-	_drawMain: function(x, y) {
-		this.drawWindowContent(x, y);
-	},
-	
-	drawWindowContent: function(x, y) {
-		var session = root.getCurrentSession();
-		if (session === null) return;
-		
-		var cacheWidth = CurrentMap.getWidth() * GraphicsFormat.MAPCHIP_WIDTH;
-		var cacheHeight = CurrentMap.getHeight() * GraphicsFormat.MAPCHIP_HEIGHT;
-		var width = this.getWindowWidth();
-		var height = this.getWindowHeight();
-		var graphicsManager = root.getGraphicsManager();
-		var scrollpixelX = session.getScrollPixelX();
-		var scrollPixelY = session.getScrollPixelY();
-		
-		// ミニマップの下地を描画する
-		this._drawWindowInternal(x, y, width, height);
-		
-		if (this._picCache !== null) {
-			// キャッシュが有効であれば、アルファ値を指定してからミニマップサイズで描画する
-			if (this._picCache.isCacheAvailable()) {
-				this._picCache.setAlpha(MiniMapSetting.MapAlpha);
-				this._picCache.drawStretchParts(x, y, width, height, 0, 0, cacheWidth, cacheHeight);
-				return;
-			}
-		}
-		else {
-			this._picCache = graphicsManager.createCacheGraphics(cacheWidth, cacheHeight);
-		}
-		
-		// ミニマップとして描画する画像を指定したキャッシュを設定する
-		graphicsManager.setRenderCache(this._picCache);
-		
-		// マップのサムネイル画像を描画する
-		root.drawMapAll(session.getCurrentMapInfo());
-		
-		// スクロールしている範囲を白で半透明に塗りつぶす
-		graphicsManager.fillRange(scrollpixelX, scrollPixelY, root.getGameAreaWidth(), root.getGameAreaHeight(), 0xffffff, 120);
-		
-		// ユニット位置を描画する
-		this._drawUnitMark();
-		
-		// 描画先の指定をキャッシュから通常に戻す
-		graphicsManager.resetRenderCache();
-		
-		// ミニマップを半透明で描画したいのでアルファ値を変更する
-		this._picCache.setAlpha(MiniMapSetting.MapAlpha);
-		this._picCache.drawStretchParts(x, y, width, height, 0, 0, cacheWidth, cacheHeight);
-	},
-	
-	getWindowWidth: function() {
-		var index = this.getConfigFlagValue();
-		
-		if (typeof index !== 'number' || index < 0 || index > 2) {
-			return 0;
-		}
-		if (Object.prototype.toString.call(MiniMapSetting.MapWidth) !== '[object Array]') {
-			return 0;
-		}
-		
-		return MiniMapSetting.MapWidth[index];
-	},
-	
-	getWindowHeight: function() {
-		var index = this.getConfigFlagValue();
-		
-		if (typeof index !== 'number' || index < 0 || index > 2) {
-			return 0;
-		}
-		if (Object.prototype.toString.call(MiniMapSetting.MapHeight) !== '[object Array]') {
-			return 0;
-		}
-		
-		return MiniMapSetting.MapHeight[index];
-	},
-		
-	getWindowTextUI: function() {
-		return root.queryTextUI('default_window');
-	},
-	
-	// ウィンドウ画像を描画する代わりにgetCanvas()で四角形を描画する
-	_drawWindowInternal: function(x, y, width, height) {
-		var graphicsManager = root.getGraphicsManager();			
-		var canvas = graphicsManager.getCanvas();
-		var strokeInfo = MiniMapSetting.StrokeInfo;
-		var fillColor = MiniMapSetting.FillColor;
-		
-		canvas.setStrokeInfo(strokeInfo[0], strokeInfo[1], strokeInfo[2], true);
-		canvas.setFillColor(fillColor[0], fillColor[1]);
-		canvas.drawRectangle(x, y, width, height);
-		
-		var color = 0xffffcc;
-		var font = TextRenderer.getDefaultFont();
-		TextRenderer.drawKeywordText(x + this.getWindowWidth() - 90,  y + this.getWindowHeight() - 20, 'C：表示切替', -1, color, font);
-	},
-	
-	// ユニットの位置座標を取得して配列に格納する
-	_setPositionSettings: function() {
-//		root.watchTime();
-		var session = root.getCurrentSession();
-		if (session === null) return null;
-		
-		// マップが開かれているシーンでなければ取得しない
-		if (!f_checkSceneType()) return null;
+        if (this._scrollPos.x !== pos.x || this._scrollPos.y !== pos.y) {
+            this._scrollPos = pos;
+            return false;
+        }
+        return true;
+    },
+    
+    _checkUnitCount: function() {
+        if (!this._obj) return false;
 
-		var obj = {};
-		obj.playerArrayX = [];
-		obj.playerArrayY = [];
-		obj.enemyArrayX = [];
-		obj.enemyArrayY = [];
-		obj.allyArrayX = [];
-		obj.allyArrayY = [];
-		
-		this._setPositionSettingsInternal(PlayerList.getSortieList(), obj.playerArrayX, obj.playerArrayY);
-		this._setPositionSettingsInternal(EnemyList.getAliveList(), obj.enemyArrayX, obj.enemyArrayY);
-		this._setPositionSettingsInternal(AllyList.getAliveList(), obj.allyArrayX, obj.allyArrayY);
+        var playerList = PlayerList.getSortieList();
+        var enemyList = EnemyList.getAliveList();
+        var allyList = AllyList.getAliveList();
+        
+        return (
+            playerList.getCount() === this._obj.playerArrayX.length &&
+            enemyList.getCount() === this._obj.enemyArrayX.length &&
+            allyList.getCount() === this._obj.allyArrayX.length
+        );
+    },
+    
+    _getScrollPos: function() {
+        var session = root.getCurrentSession();
+        if (!session) return {x: 0, y: 0};
+        
+        return {
+            x: session.getScrollPixelX(),
+            y: session.getScrollPixelY()
+        };
+    },
+    
+    drawMapParts: function() {
+        // コンフィグで「非表示」または「なし」
+        if (this.getConfigFlagValue() > 1) {
+            return;
+        }
+        
+        // ユニット操作中（向きが決定されている時など）は描画しない
+        var unit = this.getMapPartsTarget();
+        if (unit !== null && unit.getDirection() !== DirectionType.NULL) {
+            return;
+        }
+        
+        var x = this._getPositionX();
+        var y = root.getGameAreaHeight() - this.getWindowHeight() - MiniMapSetting.Margin;
+        
+        this._drawMain(x, y);
+    },
+    
+    _getPositionX: function() {
+        var cursorX = LayoutControl.getPixelX(this.getMapPartsX());
+        var cursorY = LayoutControl.getPixelY(this.getMapPartsY());
+        var screenMidX = root.getGameAreaWidth() / 2;
+        var screenMidY = root.getGameAreaHeight() / 2;
+        
+        var width = this.getWindowWidth();
+        var rightX = root.getGameAreaWidth() - width - MiniMapSetting.Margin;
+        
+        // カーソルが右下にある場合は左側に表示、それ以外は右側に表示
+        if (cursorX > screenMidX && cursorY > screenMidY) {
+            return MiniMapSetting.Margin;
+        } else {
+            return rightX;
+        }
+    },
 
-//		root.log('_setPositionSettings:' + root.getElapsedTime());
-		return obj;
-	},
-	
-	_setPositionSettingsInternal: function(list, arrayX, arrayY) {
-		var i, unit;
-		var count = list.getCount();
-		
-		for (i = 0; i < count; i++) {
-			unit = list.getData(i);
-			if (unit.isInvisible()) {
-				continue;
-			}
-			
-			arrayX.push(unit.getMapX());
-			arrayY.push(unit.getMapY());
-		}
-	},
+    _drawMain: function(x, y) {
+        var session = root.getCurrentSession();
+        if (!session) return;
+        
+        var mapInfo = session.getCurrentMapInfo();
+        var cacheWidth = mapInfo.getMapWidth() * GraphicsFormat.MAPCHIP_WIDTH;
+        var cacheHeight = mapInfo.getMapHeight() * GraphicsFormat.MAPCHIP_HEIGHT;
+        var width = this.getWindowWidth();
+        var height = this.getWindowHeight();
+        var graphicsManager = root.getGraphicsManager();
+        
+        // 1. 背景ウィンドウの描画
+        this._drawWindowInternal(x, y, width, height);
+        
+        // 2. キャッシュグラフィックスの準備
+        if (this._picCache === null || !this._picCache.isCacheAvailable()) {
+            this._picCache = graphicsManager.createCacheGraphics(cacheWidth, cacheHeight);
+            
+            // キャッシュへの描画開始
+            graphicsManager.setRenderCache(this._picCache);
+            
+            // マップ全景描画
+            root.drawMapAll(mapInfo);
+            
+            // スクロール範囲の強調（白枠）
+            graphicsManager.fillRange(
+                this._scrollPos.x, this._scrollPos.y, 
+                root.getGameAreaWidth(), root.getGameAreaHeight(), 
+                MiniMapSetting.ScrollRangeColor, MiniMapSetting.ScrollRangeAlpha
+            );
+            
+            // ユニットマーカー描画
+            this._drawUnitMark();
+            
+            graphicsManager.resetRenderCache();
+        }
+        
+        // 3. キャッシュをミニマップサイズにリサイズして描画
+        this._picCache.setAlpha(MiniMapSetting.MapAlpha);
+        this._picCache.drawStretchParts(x, y, width, height, 0, 0, cacheWidth, cacheHeight);
+    },
+    
+    getWindowWidth: function() {
+        var index = this.getConfigFlagValue();
+        return (index >= 0 && index < MiniMapSetting.MapWidth.length) ? MiniMapSetting.MapWidth[index] : 0;
+    },
+    
+    getWindowHeight: function() {
+        var index = this.getConfigFlagValue();
+        return (index >= 0 && index < MiniMapSetting.MapHeight.length) ? MiniMapSetting.MapHeight[index] : 0;
+    },
+    
+    _drawWindowInternal: function(x, y, width, height) {
+        var canvas = root.getGraphicsManager().getCanvas();
+        var stroke = MiniMapSetting.StrokeInfo;
+        var fill = MiniMapSetting.FillColor;
+        
+        canvas.setStrokeInfo(stroke[0], stroke[1], stroke[2], true);
+        canvas.setFillColor(fill[0], fill[1]);
+        canvas.drawRectangle(x, y, width, height);
+        
+        // 操作ガイドテキスト
+        var color = 0xffffcc;
+        var font = TextRenderer.getDefaultFont();
+        TextRenderer.drawKeywordText(x + width - 90, y + height - 20, 'C：表示切替', -1, color, font);
+    },
+    
+    _setPositionSettings: function() {
+        if (!this._isMapScene()) return null;
 
-	// カーソルを合わせているユニットが存在していれば、その座標を記憶しておく
-	_getCurrentPos: function() {
-		var pos = null;
-		var unit = this.getMapPartsTarget();
-		
-		if (unit !== null) {
-			pos = {
-				x: unit.getMapX(),
-				y: unit.getMapY()
-			};
-		}
-		return pos;
-	},
-	
-	_drawUnitMark: function() {
-		var obj = this._obj;
-		var colorArray = this._getMarkColor();
+        var obj = {
+            playerArrayX: [], playerArrayY: [],
+            enemyArrayX: [], enemyArrayY: [],
+            allyArrayX: [], allyArrayY: []
+        };
+        
+        this._storeUnitPositions(PlayerList.getSortieList(), obj.playerArrayX, obj.playerArrayY);
+        this._storeUnitPositions(EnemyList.getAliveList(), obj.enemyArrayX, obj.enemyArrayY);
+        this._storeUnitPositions(AllyList.getAliveList(), obj.allyArrayX, obj.allyArrayY);
 
-		if (obj === null) return;
-		
-		this._drawUnitMarkInternal(obj.playerArrayX, obj.playerArrayY, colorArray[0]);
-		this._drawUnitMarkInternal(obj.enemyArrayX, obj.enemyArrayY, colorArray[1]);
-		this._drawUnitMarkInternal(obj.allyArrayX, obj.allyArrayY, colorArray[2]);
-			
-		if (this._currentPos === null) return;
-		if (typeof this._currentPos.x === 'number' && typeof this._currentPos.y === 'number') {
-			this._drawCurrentPosMark(this._currentPos.x, this._currentPos.y);
-		}
-	},
-	
-	_drawUnitMarkInternal: function(arrayX, arrayY, color) {
-		var i;
-		var count = arrayX.length;
-		var canvas = root.getGraphicsManager().getCanvas();
-		var width = GraphicsFormat.MAPCHIP_WIDTH;
-		var height = GraphicsFormat.MAPCHIP_HEIGHT;
-		
-		canvas.setFillColor(color, 210);
-//		canvas.setStrokeInfo(color, 210, 1, true);
-		
-		for (i = 0; i < count; i++) {
-			canvas.drawEllipse(arrayX[i] * width, arrayY[i] * height, width, height);
-		}
-	},
-	
-	// カーソルが合っているユニットの位置を白丸で塗りつぶす
-	_drawCurrentPosMark: function(x, y) {
-		var canvas = root.getGraphicsManager().getCanvas();
-		var width = GraphicsFormat.MAPCHIP_WIDTH;
-		var height = GraphicsFormat.MAPCHIP_HEIGHT;
-		
-		canvas.setFillColor(0xffffff, 255);
-		canvas.drawEllipse(x * width, y * height, width, height);
-	},
-	
-	_getMarkColor: function() {
-		return MiniMapSetting.UnitColor;
-	},
-	
-	// 環境設定のミニマップ表示形式の値を取得する[大, 小, 非表示, なし]
-	getConfigFlagValue: function() {
-		return ConfigItem.MapParts_MiniMap.getFlagValue();
-	}
-}
-);
+        return obj;
+    },
+    
+    _storeUnitPositions: function(list, arrayX, arrayY) {
+        var i, unit;
+        var count = list.getCount();
+        
+        for (i = 0; i < count; i++) {
+            unit = list.getData(i);
+            if (unit.isInvisible()) continue;
+            
+            arrayX.push(unit.getMapX());
+            arrayY.push(unit.getMapY());
+        }
+    },
 
-// mapが開かれているシーンを確認する。SceneType.BATTLERESULではマップ攻略が終了しているので除外している
-function f_checkSceneType()
-{
-	var baseScene = root.getBaseScene();
-	return baseScene === SceneType.FREE || baseScene === SceneType.BATTLESETUP;
-}
+    _getCurrentPos: function() {
+        var unit = this.getMapPartsTarget();
+        if (unit) {
+            return { x: unit.getMapX(), y: unit.getMapY() };
+        }
+        return null;
+    },
+    
+    _drawUnitMark: function() {
+        if (!this._obj) return;
+        
+        var colors = MiniMapSetting.UnitColor;
+        
+        this._drawGroupMark(this._obj.playerArrayX, this._obj.playerArrayY, colors[0]);
+        this._drawGroupMark(this._obj.enemyArrayX, this._obj.enemyArrayY, colors[1]);
+        this._drawGroupMark(this._obj.allyArrayX, this._obj.allyArrayY, colors[2]);
+            
+        if (this._currentPos) {
+            this._drawPointMark(this._currentPos.x, this._currentPos.y, MiniMapSetting.CurrentUnitColor, 255);
+        }
+    },
+    
+    _drawGroupMark: function(arrayX, arrayY, color) {
+        var i, x, y;
+        var count = arrayX.length;
+        var canvas = root.getGraphicsManager().getCanvas();
+        var w = GraphicsFormat.MAPCHIP_WIDTH;
+        var h = GraphicsFormat.MAPCHIP_HEIGHT;
+        
+        canvas.setFillColor(color, 210);
+        for (i = 0; i < count; i++) {
+            canvas.drawEllipse(arrayX[i] * w, arrayY[i] * h, w, h);
+        }
+    },
+    
+    _drawPointMark: function(mapX, mapY, color, alpha) {
+        var canvas = root.getGraphicsManager().getCanvas();
+        var w = GraphicsFormat.MAPCHIP_WIDTH;
+        var h = GraphicsFormat.MAPCHIP_HEIGHT;
+        
+        canvas.setFillColor(color, alpha);
+        canvas.drawEllipse(mapX * w, mapY * h, w, h);
+    },
+    
+    _isMapScene: function() {
+        var s = root.getBaseScene();
+        return s === SceneType.FREE || s === SceneType.BATTLESETUP;
+    },
 
+    getConfigFlagValue: function() {
+        return ConfigItem.MapParts_MiniMap.getFlagValue();
+    }
+});
 
+//-------------------------------------------------------------------------
+// MapEdit の拡張 (Cキーによる表示切替)
+//-------------------------------------------------------------------------
 var _MapEdit__optionAction = MapEdit._optionAction;
 MapEdit._optionAction = function(unit) {
-	// マップ上でオプションキー(Cキー)押下時はミニマップの表示形式を遷移させる(大→小→なし→大...)
-	var index = ConfigItem.MapParts_MiniMap.getFlagValue();
-	
-	if (unit === null && index !== 3) {
-		index++;
-		if (index > 2) index = 0;
-		root.getExternalData().env.MapParts_MiniMap = index;
-	}
-	
-	return _MapEdit__optionAction.call(this, unit);
+    var index = ConfigItem.MapParts_MiniMap.getFlagValue();
+    
+    // ユニットを選択していない状態でのオプションキー
+    if (unit === null && index !== 3) {
+        index = (index + 1) % 3; // 大 -> 小 -> 非表示 -> 大...
+        ConfigItem.MapParts_MiniMap.selectFlag(index);
+    }
+    
+    return _MapEdit__optionAction.call(this, unit);
 };
 
-
-//----------------------------
-// コンフィグ設定コマンド追加
-//----------------------------
-var alias_001 = ConfigWindow._configureConfigItem;
+//-------------------------------------------------------------------------
+// コンフィグ項目への追加
+//-------------------------------------------------------------------------
+var _ConfigWindow__configureConfigItem = ConfigWindow._configureConfigItem;
 ConfigWindow._configureConfigItem = function(groupArray) {
-	alias_001.call(this, groupArray);
-	
-	groupArray.appendObject(ConfigItem.MapParts_MiniMap);
+    _ConfigWindow__configureConfigItem.call(this, groupArray);
+    groupArray.appendObject(ConfigItem.MapParts_MiniMap);
 };
 
 ConfigItem.MapParts_MiniMap = defineObject(BaseConfigtItem,
 {
-	selectFlag: function(index) {
-		root.getExternalData().env.MapParts_MiniMap = index;
-	},
-	
-	getFlagValue: function() {
-		if (typeof root.getExternalData().env.MapParts_MiniMap !== 'number') {
-			return 3;
-		}
-	
-		return root.getExternalData().env.MapParts_MiniMap;
-	},
-	
-	getFlagCount: function() {
-		return 4;
-	},
-	
-	getConfigItemTitle: function() {
-		return 'ミニマップ表示';
-	},
-	
-	getConfigItemDescription: function() {
-		return 'マップ全景とユニット位置を示した縮小図を表示します';
-	},
-	
-	getObjectArray: function() {
-		return ['大', '小', '非表示', 'なし'];
-	}
-}
-);
+    selectFlag: function(index) {
+        root.getExternalData().env[MiniMapSetting.ConfigKey] = index;
+    },
+    
+    getFlagValue: function() {
+        var val = root.getExternalData().env[MiniMapSetting.ConfigKey];
+        return (typeof val === 'number') ? val : 3; // デフォルトは「なし」
+    },
+    
+    getFlagCount: function() {
+        return 4;
+    },
+    
+    getConfigItemTitle: function() {
+        return 'ミニマップ表示';
+    },
+    
+    getConfigItemDescription: function() {
+        return 'マップ全景とユニット位置を示した縮小図を表示します';
+    },
+    
+    getObjectArray: function() {
+        return ['大', '小', '非表示', 'なし'];
+    }
+});
 
 })();
