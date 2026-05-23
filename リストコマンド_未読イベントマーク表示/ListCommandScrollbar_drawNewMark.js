@@ -75,7 +75,7 @@ var NewMarkConfig = {
 	text: 'New!',
 	// 表示icon text表示採用なら設定不要 
 	// {isRuntime: true(ランタイム) / false(オリジナル), id: アイコンリソースid, xSrc: アイコンの位置x座標（左端を0）, ySrc: y座標(上端を0）}
-	icon: {isRuntime: false, id: 2, xSrc: 8, ySrc: 0},
+	icon: {isRuntime: true, id: 0, xSrc: 0, ySrc: 0},
 	// 描画位置補正
 	dx: 20,
 	dy: 10,	
