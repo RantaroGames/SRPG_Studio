@@ -140,7 +140,7 @@ var ReadEventStore = {
 			data.readEvent = global.ReadEvent;
 		}
 
-		data.currentMapId =	typeof global.CurrentMapId === 'number' ? global.CurrentMapId : -1;
+		data.currentMapId = typeof global.CurrentMapId === 'number' ? global.CurrentMapId : -1;
 
 		// 旧版データの初期化（保留。現状放置）
 		// global.ReadEvent = null;
