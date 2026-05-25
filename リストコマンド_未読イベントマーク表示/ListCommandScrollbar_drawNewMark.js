@@ -587,7 +587,7 @@ CommunicationScrollbar._drawName = function(x, y, object, isSelect, index) {
 	textui = this.getParentTextUI();
 	color = this._getEventColor(object, textui);
 	font = textui.getFont();
-	alpha = RenderManager_RG.getTextAlpha(
+	alpha = RenderManager_RG.getAlphaFromCounter(
 		NewMarkConfig.min,
 		NewMarkConfig.max,
 		this._rgLightUpCycleCounter,
@@ -598,7 +598,7 @@ CommunicationScrollbar._drawName = function(x, y, object, isSelect, index) {
 };
 
 var RenderManager_RG = {
-	getTextAlpha: function(min, max, counter, counterMax) {
+	getAlphaFromCounter: function(min, max, counter, counterMax) {
 		var t = counter.getCounter() / counterMax;
 		var rate = (Math.sin(t * Math.PI * 2 - Math.PI / 2) + 1) / 2;
 
