@@ -96,9 +96,7 @@ var NewMarkConfig = {
 	isHighlightSelectedItem: false,
 	// 点滅間隔フレーム数
 	lightUpCounterMax: 60,
-	// アルファ値の基準
-	baseAlpha: 0,
-	// 変化量の最小最大値
+	// アルファ値の最小、最大値
 	min: 64,
 	max: 255
 	
@@ -590,7 +588,6 @@ CommunicationScrollbar._drawName = function(x, y, object, isSelect, index) {
 	color = this._getEventColor(object, textui);
 	font = textui.getFont();
 	alpha = RantaroGames.ReadEventNewMark.RendererControl.getTextAlpha(
-		NewMarkConfig.baseAlpha,
 		NewMarkConfig.min,
 		NewMarkConfig.max,
 		this._rgLightUpCycleCounter,
@@ -601,12 +598,12 @@ CommunicationScrollbar._drawName = function(x, y, object, isSelect, index) {
 };
 
 RantaroGames.ReadEventNewMark.RendererControl = {
-	getTextAlpha: function(baseAlpha, min, max, counter, counterMax) {
+	getTextAlpha: function(min, max, counter, counterMax) {
 		var t = counter.getCounter() / counterMax;
 		var rate = (Math.sin(t * Math.PI * 2 - Math.PI / 2) + 1) / 2;
 
 		rate = Math.pow(rate, 2.5);
-		return Math.floor(min + (max - min) * rate) + baseAlpha;
+		return Math.floor(min + (max - min) * rate);
 	}
 };
 
