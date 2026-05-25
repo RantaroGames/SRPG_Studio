@@ -587,7 +587,7 @@ CommunicationScrollbar._drawName = function(x, y, object, isSelect, index) {
 	textui = this.getParentTextUI();
 	color = this._getEventColor(object, textui);
 	font = textui.getFont();
-	alpha = RantaroGames.ReadEventNewMark.RendererControl.getTextAlpha(
+	alpha = RenderManager_RG.getTextAlpha(
 		NewMarkConfig.min,
 		NewMarkConfig.max,
 		this._rgLightUpCycleCounter,
@@ -597,7 +597,7 @@ CommunicationScrollbar._drawName = function(x, y, object, isSelect, index) {
 	TextRenderer.drawAlphaText(x, y + ContentLayout.KEYWORD_HEIGHT, object.event.getName(), -1, color, alpha, font);
 };
 
-RantaroGames.ReadEventNewMark.RendererControl = {
+var RenderManager_RG = {
 	getTextAlpha: function(min, max, counter, counterMax) {
 		var t = counter.getCounter() / counterMax;
 		var rate = (Math.sin(t * Math.PI * 2 - Math.PI / 2) + 1) / 2;
