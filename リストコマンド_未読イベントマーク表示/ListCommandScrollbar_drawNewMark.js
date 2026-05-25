@@ -596,9 +596,10 @@ CommunicationScrollbar._drawName = function(x, y, object, isSelect, index) {
 		NewMarkConfig.min,
 		NewMarkConfig.max,
 		this._rgLightUpCycleCounter,
-		NewMarkConfig.lightUpCounterMax
+		NewMarkConfig.lightUpCounterMax + 2
 	);
-
+	// CycleCounter._maxがsetCounterInfo(max)でmax+2と処理されているので暫定的な処置
+	
 	TextRenderer.drawAlphaText(x, y + ContentLayout.KEYWORD_HEIGHT, object.event.getName(), -1, color, alpha, font);
 };
 
