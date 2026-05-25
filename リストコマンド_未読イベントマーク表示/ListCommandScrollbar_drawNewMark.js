@@ -595,21 +595,23 @@ CommunicationScrollbar._drawName = function(x, y, object, isSelect, index) {
 	alpha = RenderManager_RG.getAlphaFromCounter(
 		NewMarkConfig.min,
 		NewMarkConfig.max,
-		this._rgLightUpCycleCounter,
-		NewMarkConfig.lightUpCounterMax + 2
+		this._rgLightUpCycleCounter
 	);
-	// CycleCounter._maxがsetCounterInfo(max)でmax+2と処理されているので暫定的な処置
 	
 	TextRenderer.drawAlphaText(x, y + ContentLayout.KEYWORD_HEIGHT, object.event.getName(), -1, color, alpha, font);
 };
 
 var RenderManager_RG = {
-	getAlphaFromCounter: function(min, max, counter, counterMax) {
-		var t = counter.getCounter() / counterMax;
+	getAlphaFromCounter: function(min, max, counter) {
+		var t = counter.getCounter() / this._getCounterMax(counter);
 		var rate = (Math.sin(t * Math.PI * 2 - Math.PI / 2) + 1) / 2;
 
 		rate = Math.pow(rate, 2.5);
 		return Math.floor(min + (max - min) * rate);
+	},
+
+	_getCounterMax: function(counter) {
+		return counter._max;
 	}
 };
 
