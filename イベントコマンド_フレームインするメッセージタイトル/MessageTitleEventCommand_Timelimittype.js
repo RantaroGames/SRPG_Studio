@@ -2,7 +2,7 @@
 ■ファイル
 MessageTitleEventCommand_Timelimittype.js
 
-■SRPG Studio対応バージョン:1.238
+■SRPG Studio対応バージョン:1.322
 
 ■プラグインの概要
 イベントコマンド：<メッセージタイトル>と同等の機能で以下の機能を追加
@@ -31,6 +31,7 @@ CEC_MessageTitleEventCommand
 , wait: 120
 , direction: 0
 , isOneway: false
+, textui: 'attacknumber_title'
 }
 
 //----------------------------------------------------------
@@ -52,6 +53,8 @@ CEC_MessageTitleEventCommand
  : スライドの開始方向 「0:左から指定座標へ, 1:右, 2:上, 3:下, 4:左上, 5:左下, 6:右上, 7:右下, 8:スライド無し」未指定または無効な値の場合、規定で左からスライド
  isOnway
  : true/false 消去時にスライド方向を一定にする(左から右へ入った時にそのまま右へ抜けて消える)
+ textui
+ : リソース>リソース使用箇所>テキストUIのリストから内部名を''で囲って記述する。指定したtitleUIに変更できる
 
 (*1)表示開始からカウント(実際はCycleCounterクラスの処理にて+2フレームされているものと思われる)
 フレームインの時間は16フレーム(タイトル長を16分割して順次表示している)
@@ -76,311 +79,293 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 2023/12/05
 本体ver.1288対応
 (this._getTitleCenterPos()の処理変更の際にthis._partsCountプロパティが追加された)
+2026/05/30
+コードのリファクタリング
+使用するUIをコード実行時に変更し易くできるようにした
+
 */
 
-(function() {
+(function () {
 
 var alias1 = ScriptExecuteEventCommand._configureOriginalEventCommand;
 ScriptExecuteEventCommand._configureOriginalEventCommand = function(groupArray) {
 	alias1.call(this, groupArray);
-	
 	groupArray.appendObject(MessageTitleEventCommand_TimeLimitType);
 };
 
 var MessageTitleEventCommand_TimeLimitType = defineObject(MessageTitleEventCommand,
 {
 	_counter: null,
-	_wait: 0,
-	_interval: 0,
+	_wait: 180,
+	_interval: 16,
 	_direction: 0,
 	_inputallowed: false,
 	_isOneway: false,
-	
+
 	enterEventCommandCycle: function() {
 		this._prepareEventCommandMemberData();
-		
+
 		if (!this._checkEventCommand()) {
 			return EnterResult.NOTENTER;
 		}
-		
+
 		this._counter = createObject(CycleCounter);
 		this._counter.setCounterInfo(this._wait);
-		
-		//高速化を受け付けないようにする
+
+		// 高速化を受け付けない
 		this._counter.disableGameAcceleration();
-		
+
 		return this._completeEventCommandMemberData();
 	},
-	
+
 	moveEventCommandCycle: function() {
 		// 30フレーム経過後は決定キー押下でのイベント終了処理を許可する
 		if (this._inputallowed === false && this._counter.getCounter() > 30) {
 			this._inputallowed = true;
 		}
-		
+
 		if (this._counter.moveCycleCounter() !== MoveResult.CONTINUE) {
 			return MoveResult.END;
 		}
-		
-		if (InputControl.isSelectAction()) {
-			if (this._inputallowed === true) {
-				return MoveResult.END;
-			}
+
+		if (this._inputallowed && InputControl.isSelectAction()) {
+			return MoveResult.END;
 		}
-		
+
 		return MoveResult.CONTINUE;
 	},
-	
+
+	drawEventCommandCycle: function() {
+		var pos = this._getDrawPosition();
+		var offset = this._getAnimationOffset();
+		var textui = this._getTitleText();
+
+		TextRenderer.drawFixedTitleText(
+			pos.x + offset.dx,
+			pos.y + offset.dy,
+			this._text,
+			textui.getColor(),
+			textui.getFont(),
+			TextFormat.CENTER,
+			textui.getUIImage(),
+			this._partsCount
+		);
+	},
+
 	_prepareEventCommandMemberData: function() {
-		var eventcommandObject = root.getEventCommandObject();
-		var arg = eventcommandObject.getEventCommandArgument();
+		var eventCommandObject = root.getEventCommandObject();
+		var arg = eventCommandObject.getEventCommandArgument();
 		
+		this._arg = arg;
 		var textui = this._getTitleText();
 		var font = textui.getFont();
-		var content, unit;
-		
-		var isCenterShow = (typeof arg.isCenterShow === 'boolean') ? arg.isCenterShow : false;
-		var isUnitBase = false;
-		var session = root.getCurrentSession();
-		var sceneType = root.getBaseScene();
-		//「戦闘準備画面」でイベントを実行し、イベント中にこのメソッドroot.getBaseSceneを呼び出すと、SceneType.BATTLESETUPが返る
-		// ユニットを基準にできるのはマップが開かれているシーン
-		if (sceneType === SceneType.BATTLESETUP || sceneType === SceneType.FREE) {
-			if (typeof arg.isUnitBase === 'boolean') {
-				isUnitBase = arg.isUnitBase;
-			}
-		}
-//		root.log(sceneType + ': isUnitBase:' + isUnitBase);
-		var dx = (typeof arg.x === 'number') ? arg.x : 0;
-		var dy = (typeof arg.y === 'number') ? arg.y : 0;
-		
+
+		var isCenterShow = arg.isCenterShow === true;
+		var isUnitBase = this._isUnitBaseEnabled(arg);
+
 		this._wait = 180;
 		this._interval = 16;
-		this._direction = (typeof arg.direction === 'number') ? arg.direction : 0;
+		this._direction = typeof arg.direction === 'number' ? arg.direction : 0;
 		this._inputallowed = false;
-		this._isOneway = false;
+		this._isOneway = arg.isOneway === true;
 		
-		if (typeof arg.text === 'string') {
-			this._text = arg.text;
-			// text文字数が32文字を超える場合は32文字のみ取り出す
-			if (this._text.length > 32) this._text = this._text.slice(0, 32);
-		} else {
-			this._text = 'error: arg.textが文字列ではありません';
+		this._text = this._getMessageText(arg);
+		
+		if (typeof arg.wait === 'number' && arg.wait > this._interval) {
+			this._wait = arg.wait;
 		}
-		
-		if (typeof arg.wait === 'number') {
-			if (arg.wait > this._interval) {
-				this._wait = arg.wait;
-			}
-		}
-		
-		if (typeof arg.isOneway === 'boolean') {
-			this._isOneway = arg.isOneway;
-		}
-		
+
 		this._textWidth = TextRenderer.getTextWidth(this._text, font);
 		this._partsCount = TitleRenderer.getTitlePartsCount(this._text, font);
 		this._partsWidth = TitleRenderer.getTitlePartsWidth();
 		this._partsHeight = TitleRenderer.getTitlePartsHeight();
-		
-		if (isCenterShow === true) {
-			// 特定の背景ベースであるか、マップベースであるかによって、root.getGameAreaWidthの値は変化し、
-			// 中央位置は異なるため、ここで_getTitleCenterPosを呼び出さない。
+
+		if (isCenterShow) {
 			this._xStart = -1;
 			this._yStart = -1;
 		}
-		else if (isUnitBase === true) {
-			content = eventcommandObject.getOriginalContent();
-			unit = content.getUnit();
+		else if (isUnitBase) {
+			this._setUnitBasePosition(eventCommandObject, arg);
+		}
+		else {
+			this._xStart = typeof arg.x === 'number' ? arg.x : 0;
+			this._yStart = typeof arg.y === 'number' ? arg.y : 0;
+		}
+	},
 
-			if (unit !== null) {
-				unitX = unit.getMapX();
-				unitY = unit.getMapY();
-//				root.log(unit.getName() +'x:'+ unitX + ' y:'+ unitY);
-				
-				// ユニット基準の場合、ユニットが画面内にいること
-				if (session !== null && MapView.isVisible(unitX, unitY)) {
-					this._xStart = LayoutControl.getPixelX(unitX) - session.getScrollPixelX() + dx;
-					this._yStart = LayoutControl.getPixelX(unitY) - session.getScrollPixelY() + dy;
-				}
-				else {
-					this._xStart = 0;
-					this._yStart = 0;
-				}
-			}
-			else {
-				this._xStart = 0;
-				this._yStart = 0;
-			}
+	_isUnitBaseEnabled: function(arg) {
+		var sceneType = root.getBaseScene();
+
+		if (sceneType !== SceneType.BATTLESETUP &&
+			sceneType !== SceneType.FREE) {
+			return false;
 		}
-		else {
-			this._xStart = dx;
-			this._yStart = dy;
-		}
+
+		return arg.isUnitBase === true;
 	},
-	
-	drawEventCommandCycle: function() {
-		var x, y, pos, obj;
-		var textui = this._getTitleText();
-		var pic = textui.getUIImage();
-		var color = textui.getColor();
-		var font = textui.getFont();
-//		var alpha = 255;
-		var dx = 0;
-		var dy = 0;
-		
-		var text = this._text;
-		var count = this._partsCount;//TitleRenderer.getTitlePartsCount(text, font);
-		var titleWidth = this._partsWidth * (count + 2);// this._partsWidthは30に等しい (UIFormat.TITLE_WIDTH / 3)
-		var titleHeight = this._partsHeight;// 60に等しい (UIFormat.TITLE_HEIGHT)
-		
-		if (this._xStart === -1 && this._xStart === -1) {
-			pos = this._getTitleCenterPos();
-			x = pos.x;
-			y = pos.y;
+
+	_getMessageText: function(arg) {
+		var text, variableReplacer;
+
+		if (typeof arg.text === 'string') {
+			text = arg.text;
+			// text文字数が32文字を超える場合は32文字のみ取り出す
+			if (text.length > 32) {
+				text = text.slice(0, 32);
+			}
 		}
 		else {
-			x = this._xStart;
-			y = this._yStart;
+			text = 'error: arg.textが文字列ではありません';
 		}
-		
-		if (this._counter.getCounter() < this._interval) {
-			obj = this._getSlideDirection(this._direction, titleWidth, titleHeight);
-			dx += obj.dx;
-			dy += obj.dy;
-		} else if (this._wait - this._counter.getCounter() < this._interval) {
-			obj = this._getEraseDirection(this._direction, titleWidth, titleHeight);
+
+		return text;
+	},
+
+	_setUnitBasePosition: function(eventCommandObject, arg) {
+		var content = eventCommandObject.getOriginalContent();
+		var unit = content.getUnit();
+		var session = root.getCurrentSession();
+
+		var dx = typeof arg.x === 'number' ? arg.x : 0;
+		var dy = typeof arg.y === 'number' ? arg.y : 0;
+
+		var unitX;
+		var unitY;
+
+		if (unit === null || session === null) {
+			this._xStart = 0;
+			this._yStart = 0;
+			return;
+		}
+
+		unitX = unit.getMapX();
+		unitY = unit.getMapY();
+
+		if (!MapView.isVisible(unitX, unitY)) {
+			this._xStart = 0;
+			this._yStart = 0;
+			return;
+		}
+
+		this._xStart =
+			LayoutControl.getPixelX(unitX) -
+			session.getScrollPixelX() +
+			dx;
+
+		this._yStart =
+			LayoutControl.getPixelY(unitY) -
+			session.getScrollPixelY() +
+			dy;
+	},
+
+	_getDrawPosition: function() {
+		if (this._xStart === -1 && this._yStart === -1) {
+			return this._getTitleCenterPos();
+		}
+
+		return {
+			x: this._xStart,
+			y: this._yStart
+		};
+	},
+
+	_getAnimationOffset: function() {
+		var count = this._counter.getCounter();
+		var remain = this._wait - count;
+
+		var titleWidth = this._partsWidth * (this._partsCount + 2);
+		var titleHeight = this._partsHeight;
+
+		var offset;
+
+		if (count < this._interval) {
+			return this._getDirectionOffset(
+				this._direction,
+				titleWidth,
+				titleHeight,
+				count / this._interval - 1
+			);
+		}
+
+		if (remain < this._interval) {
+			offset = this._getDirectionOffset(
+				this._direction,
+				titleWidth,
+				titleHeight,
+				remain / this._interval - 1
+			);
+
 			if (this._isOneway) {
-				dx += obj.dx;
-				dy += obj.dy;
+				offset.dx *= -1;
+				offset.dy *= -1;
 			}
-			else {
-				dx -= obj.dx;
-				dy -= obj.dy;
-			}
+
+			return offset;
 		}
-		else {
-			dx = 0;
-			dy = 0;
-		}
-		
-		TextRenderer.drawFixedTitleText(x + dx, y + dy, text, color, font, TextFormat.CENTER, pic, count);
-//		TextRenderer.drawFixedTitleAlphaText(x + dx, y + dy, text, color, font, TextFormat.CENTER, pic, alpha, count);
-//		root.log(this._counter.getCounter() + ' : ' + this._inputallowed);
+
+		return {
+			dx: 0,
+			dy: 0
+		};
 	},
-	
-	_getSlideDirection: function(direction, titleWidth, titleHeight) {
-		var obj = {};
-			obj.dx = 0;
-			obj.dy = 0;
-		
+
+	_getDirectionOffset: function(direction, width, height, rate) {
+		var dx = Math.ceil(width * rate);
+		var dy = Math.ceil(height * rate);
+
 		switch (direction) {
-			case 0: //左からスライド
-				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / this._interval) - titleWidth);
-				obj.dy = 0;
-				break;
-			case 1: //右から
-				obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / this._interval));
-				obj.dy = 0;
-				break;
-			case 2: //上から
-				obj.dx = 0;
-				obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / this._interval) - titleHeight);
-				break;
-			case 3: //下から
-				obj.dx = 0;
-				obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / this._interval));
-				break;
-			case 4: //左上から
-				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / this._interval) - titleWidth);
-				obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / this._interval) - titleHeight);
-				break;
-			case 5: //左下から
-				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / this._interval) - titleWidth);
-				obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / this._interval));
-				break;
-			case 6: //右上から
-				obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / this._interval));
-				obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / this._interval) - titleHeight);
-				break;
-			case 7: //右下から
-				obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / this._interval));
-				obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / this._interval));
-				break;
-			case 8: //スライドしない
-				obj.dx = 0;
-				obj.dy = 0;
-				break;
-			default: //左からスライド
-				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / this._interval) - titleWidth);
-				obj.dy = 0;
-				break;
+			case 0:
+				return { dx: dx, dy: 0 };
+
+			case 1:
+				return { dx: -dx, dy: 0 };
+
+			case 2:
+				return { dx: 0, dy: dy };
+
+			case 3:
+				return { dx: 0, dy: -dy };
+
+			case 4:
+				return { dx: dx, dy: dy };
+
+			case 5:
+				return { dx: dx, dy: -dy };
+
+			case 6:
+				return { dx: -dx, dy: dy };
+
+			case 7:
+				return { dx: -dx, dy: -dy };
+
+			case 8:
+				return { dx: 0, dy: 0 };
 		}
-		
-		return obj;
+
+		return { dx: dx, dy: 0 };
 	},
-	
-	_getEraseDirection: function(direction, titleWidth, titleHeight) {
-		var obj = {};
-			obj.dx = 0;
-			obj.dy = 0;
-		
-		switch (direction) {
-			case 0: //左からスライド
-				obj.dx = Math.ceil(titleWidth - (this._wait - this._counter.getCounter()) * (titleWidth / this._interval));
-				obj.dy = 0;
-				break;
-			case 1: //右から
-				obj.dx = Math.ceil((this._wait - this._counter.getCounter()) * (titleWidth / this._interval) - titleWidth);
-				obj.dy = 0;
-				break;
-			case 2: //上から
-				obj.dx = 0;
-				obj.dy = Math.ceil(titleHeight - (this._wait - this._counter.getCounter()) * (titleHeight / this._interval));
-				break;
-			case 3: //下から
-				obj.dx = 0;
-				obj.dy = Math.ceil((this._wait - this._counter.getCounter()) * (titleHeight / this._interval) - titleHeight);
-				break;
-			case 4: //左上から
-				obj.dx = Math.ceil(titleWidth - (this._wait - this._counter.getCounter()) * (titleWidth / this._interval));
-				obj.dy = Math.ceil(titleHeight - (this._wait - this._counter.getCounter()) * (titleHeight / this._interval));
-				break;
-			case 5: //左下から
-				obj.dx = Math.ceil(titleWidth - (this._wait - this._counter.getCounter()) * (titleWidth / this._interval));
-				obj.dy = Math.ceil((this._wait - this._counter.getCounter()) * (titleHeight / this._interval) - titleHeight);
-				break;
-			case 6: //右上から
-				obj.dx = Math.ceil((this._wait - this._counter.getCounter()) * (titleWidth / this._interval) - titleWidth);
-				obj.dy = Math.ceil(titleHeight - (this._wait - this._counter.getCounter()) * (titleHeight / this._interval));
-				break;
-			case 7: //右下から
-				obj.dx = Math.ceil((this._wait - this._counter.getCounter()) * (titleWidth / this._interval) - titleWidth);
-				obj.dy = Math.ceil((this._wait - this._counter.getCounter()) * (titleHeight / this._interval) - titleHeight);
-				break;
-			case 8: //スライドしない
-				obj.dx = 0;
-				obj.dy = 0;
-				break;
-			default: //左からスライド
-				obj.dx = Math.ceil(titleWidth - (this._wait - this._counter.getCounter()) * (titleWidth / this._interval));
-				obj.dy = 0;
-				break;
-		}
-		
-		return obj;
-	},
-	
+
 	_getTitleText: function() {
-		//タイトル枠(画像)を変更したい場合 リソース使用箇所>テキストUI>内部名を記述すればよい
-		return root.queryTextUI('eventmessage_title');
+		var textui = null;
+
+		if (
+			this._arg &&
+			typeof this._arg.textui === 'string' &&
+			this._arg.textui !== ''
+		) {
+			textui = root.queryTextUI(this._arg.textui);
+		}
+
+		if (textui === null) {
+			textui = root.queryTextUI('eventmessage_title');
+		}
+
+		return textui;
 	},
-	
+
 	getEventCommandName: function() {
 		return 'CEC_MessageTitleEventCommand';
 	}
-}
-);
-
+});
 
 })();
