@@ -2,7 +2,7 @@
 ■ファイル
 OEC_ItemChangeInBulk.js
 
-■SRPG Studio対応バージョン:1.302
+■SRPG Studio対応バージョン:1.322
 
 ■プラグインの概要
 指定したアイテムを複数個一括でストックまたはユニットに増減させるオリジナルイベントコマンドを実装します。
@@ -70,6 +70,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 ■更新履歴
 2024/10/04 新規作成
 2024/10/06 通知画像をスライド表示できるようにした
+2026/05/31 コードのリファクタリング
 
 */
 
@@ -82,7 +83,7 @@ var NoticeViewSetting = {
 	// アイテムを増やした時
 	// GETITEM: '変更したい文字列' という形で置き換えれば文章を変更できる
 	GETITEM:  StringTable.GetTitle_ItemChange
-	// アイテムを減らした時	
+	// アイテムを減らした時
 ,	LOSTITEM: StringTable.LostTitle_ItemChange
 
 	// スライド方向 0:左からフレームイン, 1:右から, 2:上から, 3:下から, 4:左上から, 5:左下から, 6:右上から, 7:右下から, 8:スライド無し
@@ -103,9 +104,9 @@ var NoticeViewSetting = {
 //-------------------------------------------------------------------
 
 // オリジナルイベントコマンドを実装する
-var alias001 = ScriptExecuteEventCommand._configureOriginalEventCommand;
+var _ScriptExecuteEventCommand__configureOriginalEventCommand = ScriptExecuteEventCommand._configureOriginalEventCommand;
 ScriptExecuteEventCommand._configureOriginalEventCommand = function(groupArray) {
-	alias001.call(this, groupArray);
+	_ScriptExecuteEventCommand__configureOriginalEventCommand.call(this, groupArray);
 	
 	groupArray.appendObject(OEC_ItemChangeInBulk);
 };
@@ -113,14 +114,15 @@ ScriptExecuteEventCommand._configureOriginalEventCommand = function(groupArray) 
 // 複数個のアイテムを一括で増減させるイベントコマンド
 var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 {	
-	_maxcount: 0,
+	_requestCount: 0,
+	_resultCount: 0,
 	_isDeleteRemainder: false,
 	_isNoticeShow: true,
 	
 	_prepareEventCommandMemberData: function() {
 		var eventCommandData = root.getEventCommandObject();
 		var arg = eventCommandData.getEventCommandArgument();
-		var content = root.getEventCommandObject().getOriginalContent();
+		var content = eventCommandData.getOriginalContent();
 		
 		this._targetItem = content.getItem();
 		this._increaseType = typeof arg.increaseType === 'number' ? arg.increaseType : 0;//IncreaseType.INCREASE;
@@ -136,7 +138,9 @@ var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 		this._stockItemFull = createObject(BulkStockItemFull);
 		
 		this._targetUnit = this._isStockChange === true ? null : content.getUnit();
-		this._maxcount = content.getValue(0) > 0 ? content.getValue(0) : 1;
+		this._requestCount = Math.max(content.getValue(0), 1);
+		this._resultCount = this._requestCount;
+		
 		this._isDeleteRemainder = typeof arg.isDeleteRemainder === 'boolean' ? arg.isDeleteRemainder : false;
 		this._isNoticeShow = typeof arg.isNoticeShow === 'boolean' ? arg.isNoticeShow : true;
 	},
@@ -161,14 +165,14 @@ var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 		this._itemArray = [];
 		
 		if (this._isStockChange) {
-			this._changeStockItem(this._targetItem, this._increaseType, this._maxcount);
+			this._changeStockItem(this._targetItem, this._increaseType, this._requestCount);
 		}
 		else {
 			// 自軍でない場合はストックに送れない
 			if (this._targetUnit.getUnitType() !== UnitType.PLAYER) {
 				this._isStockSend = false;
 			}
-			this._changeUnitItem(this._targetUnit, this._targetItem, this._increaseType, this._isStockSend, this._maxcount);
+			this._changeUnitItem(this._targetUnit, this._targetItem, this._increaseType, this._isStockSend, this._requestCount);
 		}
 		
 		if (this.isSystemSkipMode() && this._itemArray.length === 0) {
@@ -185,7 +189,7 @@ var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 			if (this._itemArray.length === 0 && this._isNoticeShow === false) {
 				return EnterResult.NOTENTER;
 			}
-			this._itemChangeView.setItemChangeData(this._targetItem, this._increaseType, this._maxcount, this._targetUnit);
+			this._itemChangeView.setItemChangeData(this._targetItem, this._increaseType, this._resultCount, this._targetUnit);
 			this.changeCycleMode(ItemChangeMode.NOTICE);
 		}
 		else {
@@ -218,13 +222,14 @@ var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 			}
 			// 指定個数より実際に増加した数が小さければ修正する
 			if (this._isDeleteRemainder === true) {
-				this._maxcount = amount < count ? amount : count;
+				this._resultCount = Math.min(amount, count);
 			}
 		}
 		else if (type === IncreaseType.DECREASE) {
 			StockItemControl.sortItem();
 			stockCount = StockItemControl.getStockItemCount();
 			amount = 0;
+			j = -1;
 			
 			// ストックに対象アイテムが何個あるかをamountに記録する
 			// 最初にヒットしたindexをjに記録する
@@ -241,12 +246,15 @@ var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 			}
 			
 			// 指定個数より在庫が小さければ修正する
-			count = amount < count ? amount : count;
-			this._maxcount = count;
+			count = Math.min(amount, count);
+			this._resultCount = count;
 //			root.log('j' + j + ' count' + count);
 			// 配列から指定個数分のアイテムを取り除く
 			itemArray = StockItemControl.getStockItemArray();
-			itemArray.splice(j, count);
+			
+			if (j >= 0 && count > 0) {
+				itemArray.splice(j, count);
+			}
 			
 			StockItemControl.sortItem();
 		}
@@ -267,14 +275,16 @@ var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 				}
 				else {
 					UnitItemControl.pushItem(unit, item);
-					// 新しいアイテムを所持したため更新
-					ItemControl.updatePossessionItem(unit);
 					amount++;
 				}
 			}
+			
+			if (amount > 0) {
+				ItemControl.updatePossessionItem(unit);
+			}
 			// 指定個数より実際に増加した数が小さければ修正する
 			if (this._isDeleteRemainder === true) {
-				this._maxcount = amount < count ? amount : count;
+				this._resultCount = Math.min(amount, count);
 			}
 		}
 		else if (type === IncreaseType.DECREASE) {
@@ -299,11 +309,16 @@ var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 					if (amount >= count) break;
 				}
 			}
+			
 			// 所持品の順番を整理して空白を詰める
 			UnitItemControl.arrangeItem(unit);
+			
+			if (amount > 0) {
+				ItemControl.updatePossessionItem(unit);
+			}
 			// 指定個数より所持していた数が小さければ修正する
-			count = amount < count ? amount : count;
-			this._maxcount = count;
+			count = Math.min(amount, count);
+			this._resultCount = count;
 			
 			this._itemArray = arr;
 		}
@@ -314,7 +329,6 @@ var OEC_ItemChangeInBulk = defineObject(ItemChangeEventCommand,
 	}
 }
 );
-
 
 var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 {
@@ -360,53 +374,137 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 		var height = TitleRenderer.getTitlePartsHeight();
 		var count = this.getTitlePartsCount();
 		
-		var obj;
-		var dx = 0, dy = 0;
-		var xPadding = DefineControl.getWindowXPadding();
-		var yPadding = DefineControl.getWindowYPadding();
 		var titleWidth = this.getNoticeViewWidth();
 		var titleHeight = this.getNoticeViewHeight();
-		
-		if (this._counter.getCounter() < NoticeViewSetting.INTERVAL) {
-			obj = this._getSlideDirection(NoticeViewSetting.DIRECTION, titleWidth, titleHeight);
-			dx += obj.dx;
-			dy += obj.dy;
-		}
-		else if (NoticeViewSetting.FRAMEMAX - this._counter.getCounter() < NoticeViewSetting.INTERVAL) {
-			obj = this._getEraseDirection(NoticeViewSetting.DIRECTION, titleWidth, titleHeight);
-			dx -= obj.dx;
-			dy -= obj.dy;
-		}
-		else {
-			dx = 0;
-			dy = 0;
-		}
-	
-		// 表示位置 0:左中央, 1:右中央, 2:上中央, 3:下中央, 4:左上, 5:左下, 6:右上, 7:右下, 8:中央
-		switch (NoticeViewSetting.BASEPOS) {
-			case 0: x = xPadding; break;
-			case 1: x = root.getGameAreaWidth() - titleWidth - xPadding; break;
-			case 2: y = yPadding; break;
-			case 3: y = root.getGameAreaHeight() - titleHeight - yPadding; break;
-			case 4: x = xPadding; y = yPadding; break;
-			case 5: x = xPadding; y = root.getGameAreaHeight() - titleHeight - yPadding; break;
-			case 6: x = root.getGameAreaWidth() - titleWidth - xPadding; y = yPadding; break;
-			case 7: x = root.getGameAreaWidth() - titleWidth - xPadding; y = root.getGameAreaHeight() - titleHeight - yPadding; break;
-			case 8: break;
-			default: break;
-		}
-		
-		x += NoticeViewSetting.POSX;
-		y += NoticeViewSetting.POSY;
-		
-		TitleRenderer.drawTitle(pic, x + dx, y + dy, width, height, count);
+		var obj = this._getAnimationOffset(NoticeViewSetting.DIRECTION, titleWidth, titleHeight);
+		var pos = this._getBasePosition(x, y, titleWidth, titleHeight);
 
-		this.drawNoticeViewContent(x + 20 + dx, y + 18 + dy);
+		x = pos.x + NoticeViewSetting.POSX;
+		y = pos.y + NoticeViewSetting.POSY;
+
+		TitleRenderer.drawTitle(pic, x + obj.dx, y + obj.dy, width, height, count);
+		
+		x += this._getNoticeStartX();
+		y += this._getNoticeStartY();
+		this.drawNoticeViewContent(x + obj.dx, y + obj.dy);
 		
 		// 増減の対象名を描画する
 		if (NoticeViewSetting.DRAWTARGETNAME === true) {
-			this.drawTargetName(x + 10 + dx, y - 42 + dy);
+			this.drawTargetName(x + 10 + obj.dx, y - 52 + obj.dy);
 		}
+	},
+	
+	_getAnimationOffset: function(direction, width, height) {
+		if (!this._counter) {
+			return {
+				dx: 0,
+				dy: 0
+			};
+		}
+		
+		var count = this._counter.getCounter();
+		var remain = NoticeViewSetting.FRAMEMAX - count;
+		var interval = Math.max(1, NoticeViewSetting.INTERVAL);
+
+		if (count < interval) {
+			return this._getDirectionOffset(
+				direction,
+				width,
+				height,
+				count / interval - 1
+			);
+		}
+
+		if (remain < interval) {
+			return this._getDirectionOffset(
+				direction,
+				width,
+				height,
+				remain / interval - 1
+			);
+		}
+
+		return {
+			dx: 0,
+			dy: 0
+		};
+	},
+	
+	_getDirectionOffset: function(direction, width, height, rate) {
+		var dx = Math.ceil(width * rate);
+		var dy = Math.ceil(height * rate);
+
+		switch (direction) {
+			case 0:
+				return { dx: dx, dy: 0 };
+
+			case 1:
+				return { dx: -dx, dy: 0 };
+
+			case 2:
+				return { dx: 0, dy: dy };
+
+			case 3:
+				return { dx: 0, dy: -dy };
+
+			case 4:
+				return { dx: dx, dy: dy };
+
+			case 5:
+				return { dx: dx, dy: -dy };
+
+			case 6:
+				return { dx: -dx, dy: dy };
+
+			case 7:
+				return { dx: -dx, dy: -dy };
+
+			case 8:
+				return { dx: 0, dy: 0 };
+		}
+
+		return { dx: dx, dy: 0 };
+	},
+	
+	_getBasePosition: function(x, y, width, height) {
+		var xPadding = DefineControl.getWindowXPadding();
+		var yPadding = DefineControl.getWindowYPadding();
+
+		switch (NoticeViewSetting.BASEPOS) {
+			case 0:
+				x = xPadding;
+				break;
+			case 1:
+				x = root.getGameAreaWidth() - width - xPadding;
+				break;
+			case 2:
+				y = yPadding;
+				break;
+			case 3:
+				y = root.getGameAreaHeight() - height - yPadding;
+				break;
+			case 4:
+				x = xPadding;
+				y = yPadding;
+				break;
+			case 5:
+				x = xPadding;
+				y = root.getGameAreaHeight() - height - yPadding;
+				break;
+			case 6:
+				x = root.getGameAreaWidth() - width - xPadding;
+				y = yPadding;
+				break;
+			case 7:
+				x = root.getGameAreaWidth() - width - xPadding;
+				y = root.getGameAreaHeight() - height - yPadding;
+				break;
+		}
+
+		return {
+			x: x,
+			y: y
+		};
 	},
 	
 	// 増減させたアイテムの名前と個数を表示する処理
@@ -418,11 +516,14 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 		var infoColor = this._increaseType === IncreaseType.INCREASE ? ColorValue.KEYWORD : ColorValue.INFO;
 		var width = TextRenderer.getTextWidth(text, font) + 5;
 		var dy = 0;
+		var iconWidth = GraphicsFormat.ICON_WIDTH;
 		
 		TextRenderer.drawKeywordText(x, y, text, -1, infoColor, font);
 		ItemRenderer.drawItem(x + width, y + dy, this._targetItem, color, font, false);
 		
-		width += TextRenderer.getTextWidth(this._targetItem.getName(), font) + 35;
+		width += iconWidth;
+		width += TextRenderer.getTextWidth(this._targetItem.getName(), font);
+		width += 10;
 		TextRenderer.drawSignText(x + width, y + dy, '×');
 		NumberRenderer.drawAttackNumber(x + width + 15, y + dy, this._itemCount);
 	},
@@ -450,7 +551,8 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 	
 	_setTitlePartsCount: function() {
 		var font = this.getTitleTextUI().getFont();
-		var textWidth = TextRenderer.getTextWidth(this._targetItem.getName(), font) + 120 + (TitleRenderer.getTitlePartsWidth() * 2);
+		var basePadding = 120;
+		var textWidth = TextRenderer.getTextWidth(this._targetItem.getName(), font) + basePadding + (TitleRenderer.getTitlePartsWidth() * 2);
 		
 		this._titlePartsCount = Math.floor(textWidth / TitleRenderer.getTitlePartsWidth());
 	},
@@ -464,108 +566,13 @@ var BulkItemChangeNoticeView = defineObject(ItemChangeNoticeView,
 		}
 	},
 	
-	_getSlideDirection: function(direction, titleWidth, titleHeight) {
-		var obj = {};
-			obj.dx = 0;
-			obj.dy = 0;
-	
-		switch (direction) {
-			case 0: //左からスライド
-				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
-				obj.dy = 0;
-				break;
-			case 1: //右から
-				obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL));
-				obj.dy = 0;
-				break;
-			case 2: //上から
-				obj.dx = 0;
-				obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
-				break;
-			case 3: //下から
-				obj.dx = 0;
-				obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL));
-				break;
-			case 4: //左上から
-				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
-				obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
-				break;
-			case 5: //左下から
-				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
-				obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL));
-				break;
-			case 6: //右上から
-				obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL));
-				obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
-				break;
-			case 7: //右下から
-				obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL));
-				obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / NoticeViewSetting.INTERVAL));
-				break;
-			case 8: //スライドしない
-				obj.dx = 0;
-				obj.dy = 0;
-				break;
-			default: //左からスライド
-				obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
-				obj.dy = 0;
-				break;
-		}
-	
-		return obj;
+	_getNoticeStartX: function() {
+		return 20;
 	},
 	
-	_getEraseDirection: function(direction, titleWidth, titleHeight) {
-		var obj = {};
-			obj.dx = 0;
-			obj.dy = 0;
-		
-		switch (direction) {
-			case 0: //左からスライド
-				obj.dx = Math.ceil(titleWidth - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL));
-				obj.dy = 0;
-				break;
-			case 1: //右から
-				obj.dx = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
-				obj.dy = 0;
-				break;
-			case 2: //上から
-				obj.dx = 0;
-				obj.dy = Math.ceil(titleHeight - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL));
-				break;
-			case 3: //下から
-				obj.dx = 0;
-				obj.dy = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
-				break;
-			case 4: //左上から
-				obj.dx = Math.ceil(titleWidth - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL));
-				obj.dy = Math.ceil(titleHeight - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL));
-				break;
-			case 5: //左下から
-				obj.dx = Math.ceil(titleWidth - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL));
-				obj.dy = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
-				break;
-			case 6: //右上から
-				obj.dx = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
-				obj.dy = Math.ceil(titleHeight - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL));
-				break;
-			case 7: //右下から
-				obj.dx = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL) - titleWidth);
-				obj.dy = Math.ceil((NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / NoticeViewSetting.INTERVAL) - titleHeight);
-				break;
-			case 8: //スライドしない
-				obj.dx = 0;
-				obj.dy = 0;
-				break;
-			default: //左からスライド
-				obj.dx = Math.ceil(titleWidth - (NoticeViewSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / NoticeViewSetting.INTERVAL));
-				obj.dy = 0;
-				break;
-		}
-	
-		return obj;
+	_getNoticeStartY: function() {
+		return 18;
 	}
-	
 }
 );
 
