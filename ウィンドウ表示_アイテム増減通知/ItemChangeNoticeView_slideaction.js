@@ -2,7 +2,7 @@
 ■ファイル
 ItemChangeNoticeView_slideaction.js
 
-■SRPG Studio対応バージョン:1.302
+■SRPG Studio対応バージョン:1.322
 
 ■プラグインの概要
 アイテム増減時の通知をスライドさせて表示できるようにします。
@@ -20,6 +20,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 ■更新履歴
 2024/10/06 新規作成
+2026/05/31 コードのリファクタリング
 
 */
 
@@ -27,10 +28,11 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 
 //-----------------------------------------------
 // 設定項目
+//-----------------------------------------------
 var SlideSetting = {
 	// スライド方向 0:左からフレームイン, 1:右から, 2:上から, 3:下から, 4:左上から, 5:左下から, 6:右上から, 7:右下から, 8:スライド無し
 	DIRECTION: 8
-	// 画像の分割数 8なら1フレーム毎に8分割ずつスライド
+	// 画像の分割数 8なら1フレーム毎に8分割ずつスライド(※0を指定しない)
 ,	INTERVAL: 8
 	// 通知の表示総フレーム数 60フレーム=約1秒 指定したフレーム数に到達すると決定ボタンを押さなくても通知は自動で消去されます
 ,	FRAMEMAX: 180
@@ -40,10 +42,11 @@ var SlideSetting = {
 ,	POSX: 0
 ,	POSY: 0
 	// 通知画像のUIにタイトル(内部名が *_tietle)を使用する場合は true ウィンドウ(内部名が *_window)を使用する場合はfalse
-,	UITYPE: true
+,	USE_TITLE_UI: true
 	// 通知画像のUI リソース使用箇所>テキストUIの内部名を''で括って記述する  //'default_window'
 ,	TEXTUI: 'support_title'
 };
+
 //-----------------------------------------------
 
 ItemChangeNoticeView._counter = null;
@@ -77,157 +80,137 @@ ItemChangeNoticeView.drawNoticeView = function(x, y) {
 	var width = TitleRenderer.getTitlePartsWidth();
 	var height = TitleRenderer.getTitlePartsHeight();
 	var count = this.getTitlePartsCount();
+	
 	var titleWidth = this.getNoticeViewWidth();
 	var titleHeight = this.getNoticeViewHeight();
-	var obj;
-	var dx = 0, dy = 0;
+	var obj = this._getAnimationOffset(SlideSetting.DIRECTION, titleWidth, titleHeight);
+	var pos = this._getBasePosition(x, y, titleWidth, titleHeight);
+
+	x = pos.x + SlideSetting.POSX;
+	y = pos.y + SlideSetting.POSY;
+	
+	if (SlideSetting.USE_TITLE_UI === true) {
+		TitleRenderer.drawTitle(pic, x + obj.dx, y + obj.dy, width, height, count);
+	} else {
+		WindowRenderer.drawStretchWindow(x + obj.dx, y + obj.dy, titleWidth, titleHeight, pic);
+	}
+	
+	x += this._getNoticeStartX();
+	y += this._getNoticeStartY();
+	this.drawNoticeViewContent(x + obj.dx, y + obj.dy);
+};
+
+ItemChangeNoticeView._getBasePosition = function(x, y, width, height) {
 	var xPadding = DefineControl.getWindowXPadding();
 	var yPadding = DefineControl.getWindowYPadding();
 
-	if (this._counter.getCounter() < SlideSetting.INTERVAL) {
-		obj = this._getSlideDirection(SlideSetting.DIRECTION, titleWidth, titleHeight);
-		dx += obj.dx;
-		dy += obj.dy;
-	}
-	else if (SlideSetting.FRAMEMAX - this._counter.getCounter() < SlideSetting.INTERVAL) {
-		obj = this._getEraseDirection(SlideSetting.DIRECTION, titleWidth, titleHeight);
-		dx -= obj.dx;
-		dy -= obj.dy;
-	}
-	else {
-		dx = 0;
-		dy = 0;
-	}
-	
-	// 表示位置 0:左中央, 1:右中央, 2:上中央, 3:下中央, 4:左上, 5:左下, 6:右上, 7:右下, 8:中央
 	switch (SlideSetting.BASEPOS) {
-		case 0: x = xPadding; break;
-		case 1: x = root.getGameAreaWidth() - titleWidth - xPadding; break;
-		case 2: y = yPadding; break;
-		case 3: y = root.getGameAreaHeight() - titleHeight - yPadding; break;
-		case 4: x = xPadding; y = yPadding; break;
-		case 5: x = xPadding; y = root.getGameAreaHeight() - titleHeight - yPadding; break;
-		case 6: x = root.getGameAreaWidth() - titleWidth - xPadding; y = yPadding; break;
-		case 7: x = root.getGameAreaWidth() - titleWidth - xPadding; y = root.getGameAreaHeight() - titleHeight - yPadding; break;
-		case 8: break;
-		default: break;
+		case 0:
+			x = xPadding;
+			break;
+		case 1:
+			x = root.getGameAreaWidth() - width - xPadding;
+			break;
+		case 2:
+			y = yPadding;
+			break;
+		case 3:
+			y = root.getGameAreaHeight() - height - yPadding;
+			break;
+		case 4:
+			x = xPadding;
+			y = yPadding;
+			break;
+		case 5:
+			x = xPadding;
+			y = root.getGameAreaHeight() - height - yPadding;
+			break;
+		case 6:
+			x = root.getGameAreaWidth() - width - xPadding;
+			y = yPadding;
+			break;
+		case 7:
+			x = root.getGameAreaWidth() - width - xPadding;
+			y = root.getGameAreaHeight() - height - yPadding;
+			break;
 	}
-	
-	x += SlideSetting.POSX;
-	y += SlideSetting.POSY;
-	
-	if (SlideSetting.UITYPE === true) {
-		TitleRenderer.drawTitle(pic, x + dx, y + dy, width, height, count);
-	} else {
-		WindowRenderer.drawStretchWindow(x + dx, y + dy, titleWidth, titleHeight, pic);
-	}
-	
-	x += 30;
-	y += 18;
-	this.drawNoticeViewContent(x + dx, y + dy);
+
+	return {
+		x: x,
+		y: y
+	};
 };
 
-ItemChangeNoticeView._getSlideDirection = function(direction, titleWidth, titleHeight) {
-	var obj = {};
-		obj.dx = 0;
-		obj.dy = 0;
-	
-	switch (direction) {
-		case 0: //左からスライド
-			obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / SlideSetting.INTERVAL) - titleWidth);
-			obj.dy = 0;
-			break;
-		case 1: //右から
-			obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / SlideSetting.INTERVAL));
-			obj.dy = 0;
-			break;
-		case 2: //上から
-			obj.dx = 0;
-			obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / SlideSetting.INTERVAL) - titleHeight);
-			break;
-		case 3: //下から
-			obj.dx = 0;
-			obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / SlideSetting.INTERVAL));
-			break;
-		case 4: //左上から
-			obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / SlideSetting.INTERVAL) - titleWidth);
-			obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / SlideSetting.INTERVAL) - titleHeight);
-			break;
-		case 5: //左下から
-			obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / SlideSetting.INTERVAL) - titleWidth);
-			obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / SlideSetting.INTERVAL));
-			break;
-		case 6: //右上から
-			obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / SlideSetting.INTERVAL));
-			obj.dy = Math.ceil(this._counter.getCounter() * (titleHeight / SlideSetting.INTERVAL) - titleHeight);
-			break;
-		case 7: //右下から
-			obj.dx = Math.ceil(titleWidth - this._counter.getCounter() * (titleWidth / SlideSetting.INTERVAL));
-			obj.dy = Math.ceil(titleHeight - this._counter.getCounter() * (titleHeight / SlideSetting.INTERVAL));
-			break;
-		case 8: //スライドしない
-			obj.dx = 0;
-			obj.dy = 0;
-			break;
-		default: //左からスライド
-			obj.dx = Math.ceil(this._counter.getCounter() * (titleWidth / SlideSetting.INTERVAL) - titleWidth);
-			obj.dy = 0;
-			break;
+ItemChangeNoticeView._getAnimationOffset = function(direction, width, height) {
+	if (!this._counter) {
+		return {
+			dx: 0,
+			dy: 0
+		};
 	}
 	
-	return obj;
-};
-	
-ItemChangeNoticeView._getEraseDirection = function(direction, titleWidth, titleHeight) {
-	var obj = {};
-		obj.dx = 0;
-		obj.dy = 0;
-	
-	switch (direction) {
-		case 0: //左からスライド
-			obj.dx = Math.ceil(titleWidth - (SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / SlideSetting.INTERVAL));
-			obj.dy = 0;
-			break;
-		case 1: //右から
-			obj.dx = Math.ceil((SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / SlideSetting.INTERVAL) - titleWidth);
-			obj.dy = 0;
-			break;
-		case 2: //上から
-			obj.dx = 0;
-			obj.dy = Math.ceil(titleHeight - (SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / SlideSetting.INTERVAL));
-			break;
-		case 3: //下から
-			obj.dx = 0;
-			obj.dy = Math.ceil((SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / SlideSetting.INTERVAL) - titleHeight);
-			break;
-		case 4: //左上から
-			obj.dx = Math.ceil(titleWidth - (SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / SlideSetting.INTERVAL));
-			obj.dy = Math.ceil(titleHeight - (SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / SlideSetting.INTERVAL));
-			break;
-		case 5: //左下から
-			obj.dx = Math.ceil(titleWidth - (SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / SlideSetting.INTERVAL));
-			obj.dy = Math.ceil((SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / SlideSetting.INTERVAL) - titleHeight);
-			break;
-		case 6: //右上から
-			obj.dx = Math.ceil((SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / SlideSetting.INTERVAL) - titleWidth);
-			obj.dy = Math.ceil(titleHeight - (SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / SlideSetting.INTERVAL));
-			break;
-		case 7: //右下から
-			obj.dx = Math.ceil((SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / SlideSetting.INTERVAL) - titleWidth);
-			obj.dy = Math.ceil((SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleHeight / SlideSetting.INTERVAL) - titleHeight);
-			break;
-		case 8: //スライドしない
-			obj.dx = 0;
-			obj.dy = 0;
-			break;
-		default: //左からスライド
-			obj.dx = Math.ceil(titleWidth - (SlideSetting.FRAMEMAX - this._counter.getCounter()) * (titleWidth / SlideSetting.INTERVAL));
-			obj.dy = 0;
-			break;
+	var count = this._counter.getCounter();
+	var remain = SlideSetting.FRAMEMAX - count;
+	var interval = Math.max(1, SlideSetting.INTERVAL);
+
+	if (count < interval) {
+		return this._getDirectionOffset(
+			direction,
+			width,
+			height,
+			count / interval - 1
+		);
 	}
-	
-	return obj;
+
+	if (remain < interval) {
+		return this._getDirectionOffset(
+			direction,
+			width,
+			height,
+			remain / interval - 1
+		);
+	}
+
+	return {
+		dx: 0,
+		dy: 0
+	};
 };
 
-	
+ItemChangeNoticeView._getDirectionOffset = function(direction, width, height, rate) {
+	var dx = Math.ceil(width * rate);
+	var dy = Math.ceil(height * rate);
+
+	switch (direction) {
+		case 0:
+			return { dx: dx, dy: 0 };
+
+		case 1:
+			return { dx: -dx, dy: 0 };
+
+		case 2:
+			return { dx: 0, dy: dy };
+
+		case 3:
+			return { dx: 0, dy: -dy };
+
+		case 4:
+			return { dx: dx, dy: dy };
+
+		case 5:
+			return { dx: dx, dy: -dy };
+
+		case 6:
+			return { dx: -dx, dy: dy };
+
+		case 7:
+			return { dx: -dx, dy: -dy };
+
+		case 8:
+			return { dx: 0, dy: 0 };
+	}
+
+	return { dx: dx, dy: 0 };
+};
+
 })();
