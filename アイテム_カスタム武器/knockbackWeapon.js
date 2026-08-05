@@ -81,6 +81,7 @@ ran
 ■更新履歴
 2024/10/21 新規作成
 2024/10/23 距離2以上の攻撃ではノックバックが発生しないように修正
+2026/08/05 customSkill_proxybattle.js導入時、代理戦闘が発生し場合はノックバック不可にした
 
 */
 
@@ -124,6 +125,14 @@ var KnockBackFlowEntry = defineObject(BaseFlowEntry,
 		var attackInfo = AttackControl.getAttackInfo();
 		var unitSrc = attackInfo.unitSrc;
 		var order;
+		
+		// 代理戦闘が発生している場合はノックバック不可
+		var attackParam = preAttack._attackParam;
+		if (attackParam !== null &&
+			typeof attackParam.proxyBattler !== 'undefined' &&
+			attackParam.proxyBattler !== null) {
+			return false;
+		}
 		
 		// 戦闘を仕掛けたユニットと最後に攻撃したユニットが異なる
 		// 両者がノクバ武器を所持しており、unitSrcが戦闘途中に攻撃できなくなった時、
