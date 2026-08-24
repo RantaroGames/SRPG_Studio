@@ -50,7 +50,7 @@ var RantaroGames = RantaroGames || {};
 // トロフィーを区別しなくても良いなら、ステートは一つだけでも問題ない
 // 作成したステートのidを記述する
 var DropStateId = {
-	ITEM: 0
+    ITEM: 0
 ,   GOLD: 0
 ,   BONUS: 0
 };
