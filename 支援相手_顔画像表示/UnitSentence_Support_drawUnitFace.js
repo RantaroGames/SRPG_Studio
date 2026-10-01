@@ -46,7 +46,7 @@ A.支援を成立させた時点でイベントコマンドを通じてカスタ
 
 タブ：スクリプトの設定
 ・コード実行のコードボックスに以下のメソッドを記述する
-UnitCustomParameterContorol._setArrayData(targetId, value);
+RantaroGames.UnitCustomParameterControl._setArrayData(targetId, value);
 
 targetId: 支援相手になるユニットのid
 value: 支援ランクの数値
@@ -83,6 +83,7 @@ https://github.com/RantaroGames/SRPG_Studio/blob/be1b84ab349a0ac1a3573bf645e5c78
 2024/03/02 支援ランクを文字表示する機能を追加
 2024/03/03 異なる同名ユニット(複数の同名モブ敵など)に支援を設定していた場合の表示不具合を修正
 2024/04/14 NPCのid確認方法を説明欄に追記
+2026/10/01 ユニットのカスタムパラメータを設定する処理のクラス名を変更
 
 */
 
@@ -252,34 +253,6 @@ UnitSentence.Support._drawSupportData = function(x, y, unit, weapon, totalStatus
 	}	
 };
 
-// 支援相手を表示するオブジェクト(オーバーライド)
-/* UnitSentence.Support.drawUnitSentence = function(x, y, unit, weapon, totalStatus) {
-	var i, count, data, targetUnit;
-	var textui = this.getUnitSentenceTextUI();
-	var color = ColorValue.KEYWORD;
-	var font = textui.getFont();
-	var length = this._getTextLength();
-	
-	TextRenderer.drawKeywordText(x, y, StringTable.UnitSentence_Support, length, color, font);
-	
-	y += this._unitSentenceWindow.getUnitSentenceSpaceY();
-	
-	count = unit.getSupportDataCount();
-	for (i = 0; i < count; i++) {
-		data = unit.getSupportData(i);
-		targetUnit = data.getUnit();
-		if (targetUnit !== null && data.isGlobalSwitchOn() && data.isVariableOn()) {
-			// 顔画像を縮小表示する処理
-			func_drawShrinkFace(x - ImagePosX, y, targetUnit.getFaceResourceHandle(), FaceImageSize, FaceImageSize);
-			
-			// 支援相手の名前を表示する処理
-			TextRenderer.drawKeywordText(x + NamePosX, y, targetUnit.getName(), length, color, font);
-			
-			// 次の行の描画開始y座標を設定する
-			y += UnitSentenceSpaceY;
-		}
-	}
-}; */
 
 // (描画先のx座標, y座標, リソースハンドル, 描画先の幅, 描画先の高さ)
 function func_drawShrinkFace(xDest, yDest, handle, destWidth, destHeight)
@@ -317,14 +290,14 @@ UnitSentenceWindow.getWindowWidth = function() {
 
 ・カスタムパラメータを取得したい
 1.スクリプトの実行> コード実行に以下を記述する
-UnitCustomParameterControl.getCustomParameter();
+RantaroGames.UnitCustomParameterControl.getCustomParameter();
 
 2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
   指定したユニットがnullまたはキーワードを指定しなかった場合、カスタムパラメータが存在しなかった場合は、'undefined'が返ります
   
 ・カスタムパラメータを設定したい
 1.スクリプトの実行> コード実行に以下を記述する
-UnitCustomParameterControl.setCustomParameter(value);
+RantaroGames.UnitCustomParameterControl.setCustomParameter(value);
 
 2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
 3.引数(value)をカスタムパラメータに設定したい値を記述する
@@ -333,15 +306,16 @@ UnitCustomParameterControl.setCustomParameter(value);
   
  ・オリジナルデータの数値(1~6)で取得した値をカスタムパラメータに設定したい
 1.スクリプトの実行> コード実行に以下を記述する
-UnitCustomParameterContorol.setOriginalDataNumber(index);
+RantaroGames.UnitCustomParameterControl.setOriginalDataNumber(index);
 
 2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
 3.引数(index)に0～5の整数を記述する(数値1~6に対応しています)
   indexで指定した数値の値がカスタムパラメータに設定されます(indexが不正な場合は、何もせず処理を終了します)
   指定した名前のカスタムパラメータが存在しなかった場合、新たに(値と共に)設定されます
 */
+var RantaroGames = RantaroGames || {};
 
-var UnitCustomParameterControl = {
+RantaroGames.UnitCustomParameterControl = {
 	_getOriginalContent: function() {
 		return root.getEventCommandObject().getOriginalContent();
 	},
@@ -406,7 +380,7 @@ var UnitCustomParameterControl = {
 	
 	_setArrayData: function(targetId, value) {
 		var arr = this.getCustomParameter();
-		var i, count, data, index;
+		var i, count, data;
 		
 		if (Object.prototype.toString.call(arr) !== '[object Array]') {
 			arr = [];
@@ -452,3 +426,7 @@ var UnitCustomParameterControl = {
 	}
 	
 };
+
+
+// 旧名称との互換性維持
+var UnitCustomParameterContorol = RantaroGames.UnitCustomParameterControl;
