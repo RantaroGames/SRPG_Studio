@@ -317,14 +317,14 @@ UnitSentenceWindow.getWindowWidth = function() {
 
 ・カスタムパラメータを取得したい
 1.スクリプトの実行> コード実行に以下を記述する
-UnitCustomParameterContorol.getCustomParameter();
+UnitCustomParameterControl.getCustomParameter();
 
 2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
   指定したユニットがnullまたはキーワードを指定しなかった場合、カスタムパラメータが存在しなかった場合は、'undefined'が返ります
   
 ・カスタムパラメータを設定したい
 1.スクリプトの実行> コード実行に以下を記述する
-UnitCustomParameterContorol.setCustomParameter(value);
+UnitCustomParameterControl.setCustomParameter(value);
 
 2.オリジナルデータでユニットを指定し、キーワードに操作したいカスタムパラメータの名前を記述する
 3.引数(value)をカスタムパラメータに設定したい値を記述する
@@ -341,7 +341,7 @@ UnitCustomParameterContorol.setOriginalDataNumber(index);
   指定した名前のカスタムパラメータが存在しなかった場合、新たに(値と共に)設定されます
 */
 
-var UnitCustomParameterContorol = {
+var UnitCustomParameterControl = {
 	_getOriginalContent: function() {
 		return root.getEventCommandObject().getOriginalContent();
 	},
